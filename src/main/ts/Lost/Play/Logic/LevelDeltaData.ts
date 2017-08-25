@@ -1,0 +1,1 @@
+type LevelDeltaData = LevelDeltaDataMove | LevelDeltaDataTurn;

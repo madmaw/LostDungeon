@@ -1,0 +1,36 @@
+{
+  "name": "LostDungeon",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "localhost": "python -m http.server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/madmaw/maz.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/madmaw/maz/issues"
+  },
+  "homepage": "https://github.com/madmaw/maz#readme",
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-closure-compiler": "^0.0.21",
+    "grunt-contrib-clean": "^1.0.0",
+    "grunt-contrib-compress": "^1.3.0",
+    "grunt-contrib-concat": "^1.0.1",
+    "grunt-contrib-copy": "^1.0.0",
+    "grunt-contrib-cssmin": "^2.2.1",
+    "grunt-contrib-htmlmin": "^2.4.0",
+    "grunt-contrib-uglify": "^3.0.1",
+    "grunt-dev-update": "^2.0.0",
+    "grunt-inline": "^0.3.6",
+    "grunt-text-replace": "^0.4.0",
+    "grunt-ts": "^6.0.0-beta.16", 
+    "typescript": "^2.4.2"
+  }
+}
