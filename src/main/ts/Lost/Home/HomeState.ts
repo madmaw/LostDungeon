@@ -6,14 +6,28 @@ class HomeState extends State<HTMLElement> {
     }
 
     init(stateListener: StateListener): void {
-        super.init(stateListener);
+        super.init(stateListener, {});
 
         let universe = this.gameService.getUniverse();
 
         let dimension = this.element.clientHeight;
         let rng = trigRandomNumberGeneratorFactory();
         let colors = createRandomWallColors(rng);
-        let backgroundImage = createRepeatingBrickPattern(rng, dimension, dimension, 6, 9, 0.5, 0, colors.wallUpper, colors.wallLower, 6, 1, colors.grout, 'LOST DUNGEON ');
+        let backgroundImage = createRepeatingBrickPattern(
+            rng,
+            dimension,
+            dimension,
+            6,
+            9,
+            0.5,
+            0,
+            colors.wallUpper,
+            colors.wallLower,
+            6,
+            1,
+            colors.grout,
+            'LOST DUNGEON '.split('')
+        );
         this.element.setAttribute('style', 'background-image:url(' + backgroundImage.toDataURL() + ')');
 
         // add listeners

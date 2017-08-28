@@ -23,7 +23,7 @@ function matrixInvert4(a) {
     let det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
 
     if (!det) {
-    return null;
+        return nil;
     }
     det = 1.0 / det;
 

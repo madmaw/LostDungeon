@@ -1,6 +1,7 @@
 ///<reference path="Lost/StateTypeId.ts"/>
 // TODO we can remove this for Grunt build to save space
 let pi = Math.PI;
+let nil;
 window.onload = function () {
     let levelPopulator = levelPopulatorTileMazeFactory(.1, 10);
     let gameService: GameService = new LocalStorageGameService('l');

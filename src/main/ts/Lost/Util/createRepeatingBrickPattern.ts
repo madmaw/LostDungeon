@@ -11,7 +11,7 @@ function createRepeatingBrickPattern(
     brickRounding: number,
     groutWidth: number,
     groutColor: string,
-    text?: string
+    text?: string[]
 ): HTMLCanvasElement {
 
     let brickWidth = (width - groutWidth * (bricksAcross)) / bricksAcross;

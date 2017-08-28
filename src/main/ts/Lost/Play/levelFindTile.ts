@@ -8,5 +8,5 @@ function levelFindTile(level: Level, searchFunction: (tile: Tile, x?: number, y?
             }
         }
     }
-    return null;
+    return nil;
 }

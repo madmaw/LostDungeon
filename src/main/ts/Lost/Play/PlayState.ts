@@ -10,7 +10,6 @@ class PlayState extends State<HTMLCanvasElement> {
     //private cameraPositionMatrix: Matrix4;
     private cameraProjectionMatrix: Matrix4;
     private levelUpdater: LevelUpdater;
-    private keyInputFactories: { [_: number]: () => Input };
 
     private updateAnimation: Animation;
     private animationFrameRequest: number;
@@ -27,29 +26,89 @@ class PlayState extends State<HTMLCanvasElement> {
 
     constructor(private gameService: GameService, private game: Game, private level: Level, private viewerEntity: Entity, private queuedLevelDeltas: LevelDelta[]) {
         super('p');
-
-        this.keyInputFactories = {};
-        let simpleInputFactory = function (type: InputType) {
-            return function () {
-                return {
-                    type: type
-                }
-            }
-        };
-        // up
-        this.keyInputFactories[38] = simpleInputFactory(INPUT_TYPE_MOVE_FORWARD);
-        // left
-        this.keyInputFactories[37] = simpleInputFactory(INPUT_TYPE_TURN_LEFT);
-        // right
-        this.keyInputFactories[39] = simpleInputFactory(INPUT_TYPE_TURN_RIGHT);
-        // down
-        this.keyInputFactories[40] = simpleInputFactory(INPUT_TYPE_LOOK_DOWN);
-
         this.levelUpdater = new LevelUpdater(this.game, this.level);
     }
 
+    queueInput(input: Input) {
+        let updateNow = this.levelUpdater.queueInput(input);
+        if (updateNow) {
+            this.update(performance.now());
+        }
+    }
+
     init(stateListener: StateListener): void {
-        super.init(stateListener);
+        let xDown;
+        let yDown;
+        let timeDown;
+        let xDiff;
+        let yDiff;
+
+        let eventListeners = {
+            keydown: (e: KeyboardEvent) => {
+                let type: InputType;
+                switch (e.keyCode) {
+                    case 37:
+                        type = INPUT_TYPE_TURN_LEFT;
+                        break;
+                    case 38:
+                        type = INPUT_TYPE_MOVE_FORWARD;
+                        break;
+                    case 39:
+                        type = INPUT_TYPE_TURN_RIGHT;
+                        break;
+                    case 40:
+                        type = INPUT_TYPE_LOOK_DOWN;
+                        break;
+                }
+                this.queueInput({
+                    type: type
+                });
+            },
+            touchstart: (e: TouchEvent) => {
+                let touch = e.touches[0];
+                xDown = touch.clientX;
+                yDown = touch.clientY;
+                xDiff = 0;
+                yDiff = 0;
+                timeDown = e.timeStamp;
+                e.preventDefault();
+            },
+            touchmove: (e: TouchEvent) => {
+                let touch = e.touches[0];
+                xDiff = touch.clientX - xDown;
+                yDiff = touch.clientY - yDown;
+            },
+            touchend: (e: TouchEvent) => {
+                let timeDiff = e.timeStamp - timeDown;
+                
+                if (timeDiff < 400) {
+                    if (Math.abs(xDiff) + Math.abs(yDiff) < 50) {
+                        // click
+                    } else {
+                        let type: InputType;
+                        if (Math.abs(xDiff) < Math.abs(yDiff)) {
+                            // swipe vertically
+                            if (yDiff > 0) {
+                                type = INPUT_TYPE_LOOK_DOWN;
+                            } else {
+                                type = INPUT_TYPE_MOVE_FORWARD;
+                            }
+                        } else {
+                            // swipe horizontally
+                            if (xDiff > 0) {
+                                type = INPUT_TYPE_TURN_RIGHT;
+                            } else {
+                                type = INPUT_TYPE_TURN_LEFT;
+                            }
+                        }
+                        this.queueInput({
+                            type: type
+                        });
+                    }
+                }
+            }
+        };
+        super.init(stateListener, eventListeners);
 
         let width = this.element.clientWidth;
         let height = this.element.clientHeight;
@@ -143,27 +202,18 @@ class PlayState extends State<HTMLCanvasElement> {
         let rotation = matrixRotateY4(ORIENTATION_ANGLES[entity.orientation]);
         let position = matrixTranslate4(x, 0, y);
 
-        return new EntityRender(entity, position, rotation, this.healthBuffer, null, null);
+        return new EntityRender(entity, position, rotation, this.healthBuffer, nil, nil);
     }
 
     start() {
-        window.onkeydown = (e: KeyboardEvent) => {
-            let inputFactory = this.keyInputFactories[e.keyCode];
-            if (inputFactory) {
-                let updateNow = this.levelUpdater.queueInput(inputFactory());
-                if (updateNow) {
-                    this.update(performance.now());
-                }
-            }
-        };
         this.draw(this.context);
         // kick off the action
         let t = performance.now();
         this.update(t);
 
         let animate = (t: number) => {
-            this.animate(t);
             this.animationFrameRequest = requestAnimationFrame(animate);
+            this.animate(t);
         };
         animate(t);
         if (!this.updateAnimation) {
@@ -280,8 +330,9 @@ class PlayState extends State<HTMLCanvasElement> {
             let childRenders: { [_: string]: Render } = {};
 
             if (tile.type != TILE_TYPE_SOLID) {
-                let wallTexture1 = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureDimension, textureDimension, bricksAcross, bricksDown, 0.5, 0, colors.wallUpper, colors.wallLower, brickRounding, groutWidth, colors.grout, tile.type == TILE_TYPE_ROOFLESS || tile.type == TILE_TYPE_PIT ? ' ✋ ' : ' '));
-                let wallTexture2 = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureDimension, textureDimension, bricksAcross, bricksDown, 0.5, 0.5, colors.wallUpper, colors.wallLower, brickRounding, groutWidth, colors.grout, tile.type == TILE_TYPE_ROOFLESS || tile.type == TILE_TYPE_PIT ? ' ✋ ' : ' '));
+                let hole = tile.type == TILE_TYPE_ROOFLESS || tile.type == TILE_TYPE_PIT;
+                let wallTexture1 = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureDimension, textureDimension, bricksAcross, bricksDown, 0.5, 0, colors.wallUpper, colors.wallLower, brickRounding, groutWidth, colors.grout, hole  ? ['▲'] : nil));
+                let wallTexture2 = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureDimension, textureDimension, bricksAcross, bricksDown, 0.5, 0.5, colors.wallUpper, colors.wallLower, brickRounding, groutWidth, colors.grout, hole ? ['▼'] : nil));
                 if (x == 0 || this.level.tiles[x - 1][y].type == TILE_TYPE_SOLID ) {
                     // add a wall to the west
                     childRenders['w'] = new ShapeRender([matrixTranslate4(-0.5, 0.5, 0), matrixRotateZ4(Math.PI / 2),matrixRotateY4(Math.PI / 2)], this.floorRenderParams, wallTexture1);
@@ -299,7 +350,7 @@ class PlayState extends State<HTMLCanvasElement> {
                     childRenders['s'] = new ShapeRender([matrixTranslate4(0, 0.5, 0.5), matrixRotateX4(Math.PI / 2), matrixRotateY4(Math.PI)], this.floorRenderParams, wallTexture2);
                 }
                 // add a floor
-                let floorTexture = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureDimension, textureDimension, 1, 1, 0, 0, colors.floor, colors.floor, brickRounding * 4, groutWidth * 3, colors.grout, tile.type == TILE_TYPE_ROOFLESS ?'✖':' '));
+                let floorTexture = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureDimension, textureDimension, 1, 1, 0, 0, colors.floor, colors.floor, brickRounding * 4, groutWidth * 3, colors.grout, tile.type == TILE_TYPE_ROOFLESS ?[<any>this.level.levelId]:nil));
                 if (tile.type == TILE_TYPE_PIT) {
                     childRenders['W'] = new ShapeRender([matrixTranslate4(0.5, -0.5, 0), matrixRotateZ4(-Math.PI / 2), matrixRotateY4(Math.PI / 2)], this.floorRenderParams, wallTexture2);
                     childRenders['E'] = new ShapeRender([matrixTranslate4(-0.5, -0.5, 0), matrixRotateZ4(Math.PI / 2), matrixRotateY4(-Math.PI / 2)], this.floorRenderParams, wallTexture2);

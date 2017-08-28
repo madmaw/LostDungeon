@@ -115,11 +115,11 @@ class LevelUpdater {
         };
         if (valid) {
             let targetTile = this.level.tiles[x][y];
-            valid = targetTile.type != TILE_TYPE_SOLID && targetTile.entity == null;
+            valid = targetTile.type != TILE_TYPE_SOLID && !targetTile.entity;
             if (valid) {
                 // move the entity
                 let sourceTile = this.level.tiles[pos.x][pos.y];
-                sourceTile.entity = null;
+                sourceTile.entity = nil;
                 targetTile.entity = entity;
                 // update the deltas
                 deltaType = LEVEL_DELTA_TYPE_MOVE;
@@ -142,7 +142,7 @@ class LevelUpdater {
                                     playerTransition: {
                                         entity: entity,
                                         location: {
-                                            levelId: this.game.nextLevelId++,
+                                            levelId: this.game.nextLevelId+1,
                                             tileName: 's' 
                                         }
                                     }

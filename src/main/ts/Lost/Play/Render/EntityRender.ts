@@ -34,17 +34,10 @@ class EntityRender extends Render {
                 let turnData = <LevelDeltaDataTurn>delta.data;
                 let fromAngle = ORIENTATION_ANGLES[turnData.fromOrientation];
                 let toAngle = ORIENTATION_ANGLES[turnData.toOrientation];
-                while (toAngle < fromAngle) {
-                    toAngle += pi * 2;
-                }
-                let angle = toAngle - fromAngle;
-                while (angle > Math.PI) {
-                    angle -= pi * 2;
-                }
                 let targetRotation = matrixRotateY4(toAngle);
                 animation = animationTweenFactory(
                     t,
-                    easingQuadraticFactory(.002 * Math.abs(angle)),
+                    easingQuadraticFactory(.003),
                     effectSetPropertyFactory(this, 'rotation', valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.rotation), targetRotation))
                 );
                 break;
