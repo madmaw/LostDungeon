@@ -14,6 +14,6 @@ class CompositeRender extends Render {
             let child = this.children[key];
             child.draw(gl, transformStack);
         }
-
     }
+
 }

@@ -21,7 +21,11 @@ class PlayState extends State<HTMLCanvasElement> {
 //    private vertexPositionAttribute: number;
 //    private transformUniform: WebGLUniformLocation;
 
-    constructor(private gameService: GameService, private game: Game, private level: Level, private viewerEntity: Entity) {
+    private textures: WebGLTexture[] = [];
+
+    private queuedStateChangeData: LevelDeltaDataChangeState;
+
+    constructor(private gameService: GameService, private game: Game, private level: Level, private viewerEntity: Entity, private queuedLevelDeltas: LevelDelta[]) {
         super('p');
 
         this.keyInputFactories = {};
@@ -79,7 +83,7 @@ class PlayState extends State<HTMLCanvasElement> {
 
         gl.useProgram(shaderProgram);
 
-        this.cameraProjectionMatrix = matrixPerspective4(45, width / height, 0.1, 100.0);
+        this.cameraProjectionMatrix = matrixPerspective4(pi/3, width / height, 0.1, 100.0);
         //this.transformUniform = gl.getUniformLocation(shaderProgram, "uTransform");
 
         let floorVertices = [
@@ -159,14 +163,26 @@ class PlayState extends State<HTMLCanvasElement> {
 
         let animate = (t: number) => {
             this.animate(t);
-            this.animationFrameRequest = window.requestAnimationFrame(animate);
+            this.animationFrameRequest = requestAnimationFrame(animate);
         };
         animate(t);
+        if (!this.updateAnimation) {
+            this.updateAnimation = this.consume(t, this.queuedLevelDeltas);
+        }
     }
 
     stop() {
-        window.cancelAnimationFrame(this.animationFrameRequest);
+        cancelAnimationFrame(this.animationFrameRequest);
     }
+
+    destroy(): void {
+        super.destroy();
+        for (let texture of this.textures) {
+            this.context.deleteTexture(texture);
+        }
+        this.context = null;
+    }
+    
 
     consume(t: number, levelDeltas: LevelDelta[]): Animation {
         let animation: Animation;
@@ -177,8 +193,26 @@ class PlayState extends State<HTMLCanvasElement> {
                     let entityRender = this.entityRenders[entityId];
                     let animation = entityRender.consume(t, levelDelta);
                     if (animation) {
+                        if (levelDelta.children) {
+                            animation = animationChainedProxyFactory(
+                                animation,
+                                (t: number, levelDeltas: LevelDelta[]) => {
+                                    return this.consume(t, levelDeltas);
+                                },
+                                levelDelta.children
+                            );
+                        }
                         animations.push(animation);
                     }
+                }
+                switch (levelDelta.type) {
+                    case LEVEL_DELTA_TYPE_DIE:
+                        let dieData = <LevelDeltaDataDie>levelDelta.data;
+                        delete this.entityRenders[dieData.entity.id];
+                        break;
+                    case LEVEL_DELTA_TYPE_CHANGE_STATE:
+                        this.queuedStateChangeData = <LevelDeltaDataChangeState>levelDelta.data;
+                        break;
                 }
             }
             if (animations.length) {
@@ -190,9 +224,8 @@ class PlayState extends State<HTMLCanvasElement> {
 
     animate(t: number) {
         if (this.updateAnimation) {
-            let done = this.updateAnimation(t);
-            if (done) {
-                console.log('animation done');
+            let running = this.updateAnimation(t);
+            if (!running) {
                 this.updateAnimation = null;
                 this.update(t);
             }
@@ -202,10 +235,15 @@ class PlayState extends State<HTMLCanvasElement> {
             entityRender.update(t);
         }
         this.draw(this.context);
+        if (this.queuedStateChangeData) {
+            this.stateListener(this.queuedStateChangeData.stateTypeId, this.queuedStateChangeData.stateData);
+        }
     }
 
     update(t: number) {
         var levelUpdate = this.levelUpdater.updateLevel();
+        // save the changes
+        this.gameService.saveLevel(this.game, this.level);
         // animate the update
         this.updateAnimation = this.consume(t, levelUpdate.deltas);
 
@@ -220,15 +258,20 @@ class PlayState extends State<HTMLCanvasElement> {
 
     redraw() {
         let gl = this.context;
+        let rng = trigRandomNumberGeneratorFactory(this.game.randomNumberSeed + this.level.levelId * 999);
 
-        let groutWidth = 4;
-        let textureWidth = 512;
-        let textureHeight = 512;
-        let brickRounding = 6;
-        let groutColor = '#121';
-        let upperBrickColor = '#333';
-        let lowerBrickColor = '#343';
-        let floorColor = '#232';
+        let groutWidth = rng(3)+1;
+        let textureDimension = 256;
+        let brickRounding = rng(6);
+        let colors = createRandomWallColors(rng);
+        let bricksAcross = (rng(2) + 2) * 2;
+        let bricksDown = (rng(3) + 2) * 2;
+        let roofTilesAcross = (rng(4) + 1);
+        let roofTilesDown = (rng(4) + 1);
+        if (bricksAcross >= bricksDown) {
+            bricksAcross = bricksDown - 1;
+        }
+        
 
         this.updateAnimation = null;
         this.entityRenders = {};
@@ -237,9 +280,8 @@ class PlayState extends State<HTMLCanvasElement> {
             let childRenders: { [_: string]: Render } = {};
 
             if (tile.type != TILE_TYPE_SOLID) {
-                let rng = trigRandomNumberGeneratorFactory(this.level.depth * 999  + x * 999 + y);
-                let wallTexture1 = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureWidth, textureHeight, 4, 8, 0.5, 0, upperBrickColor, lowerBrickColor, brickRounding, groutWidth, groutColor));
-                let wallTexture2 = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureWidth, textureHeight, 4, 8, 0.5, 0.5, upperBrickColor, lowerBrickColor, brickRounding, groutWidth, groutColor));
+                let wallTexture1 = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureDimension, textureDimension, bricksAcross, bricksDown, 0.5, 0, colors.wallUpper, colors.wallLower, brickRounding, groutWidth, colors.grout, tile.type == TILE_TYPE_ROOFLESS || tile.type == TILE_TYPE_PIT ? ' ✋ ' : ' '));
+                let wallTexture2 = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureDimension, textureDimension, bricksAcross, bricksDown, 0.5, 0.5, colors.wallUpper, colors.wallLower, brickRounding, groutWidth, colors.grout, tile.type == TILE_TYPE_ROOFLESS || tile.type == TILE_TYPE_PIT ? ' ✋ ' : ' '));
                 if (x == 0 || this.level.tiles[x - 1][y].type == TILE_TYPE_SOLID ) {
                     // add a wall to the west
                     childRenders['w'] = new ShapeRender([matrixTranslate4(-0.5, 0.5, 0), matrixRotateZ4(Math.PI / 2),matrixRotateY4(Math.PI / 2)], this.floorRenderParams, wallTexture1);
@@ -257,10 +299,25 @@ class PlayState extends State<HTMLCanvasElement> {
                     childRenders['s'] = new ShapeRender([matrixTranslate4(0, 0.5, 0.5), matrixRotateX4(Math.PI / 2), matrixRotateY4(Math.PI)], this.floorRenderParams, wallTexture2);
                 }
                 // add a floor
-                let floorTexture = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureWidth, textureHeight, 1, 1, 0, 0, floorColor, floorColor, brickRounding * 4, groutWidth * 3, groutColor));
-                childRenders['f'] = new ShapeRender([], this.floorRenderParams, floorTexture);
-                let ceilingTexture = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureWidth, textureHeight, 3, 2, 0.5, 0, upperBrickColor, upperBrickColor, brickRounding, groutWidth, groutColor));
-                childRenders['c'] = new ShapeRender([matrixTranslate4(0, 1, 0), matrixRotateX4(Math.PI)], this.floorRenderParams, ceilingTexture);
+                let floorTexture = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureDimension, textureDimension, 1, 1, 0, 0, colors.floor, colors.floor, brickRounding * 4, groutWidth * 3, colors.grout, tile.type == TILE_TYPE_ROOFLESS ?'✖':' '));
+                if (tile.type == TILE_TYPE_PIT) {
+                    childRenders['W'] = new ShapeRender([matrixTranslate4(0.5, -0.5, 0), matrixRotateZ4(-Math.PI / 2), matrixRotateY4(Math.PI / 2)], this.floorRenderParams, wallTexture2);
+                    childRenders['E'] = new ShapeRender([matrixTranslate4(-0.5, -0.5, 0), matrixRotateZ4(Math.PI / 2), matrixRotateY4(-Math.PI / 2)], this.floorRenderParams, wallTexture2);
+                    childRenders['N'] = new ShapeRender([matrixTranslate4(0, -0.5, 0.5), matrixRotateX4(Math.PI / 2)], this.floorRenderParams, wallTexture1);
+                    childRenders['S'] = new ShapeRender([matrixTranslate4(0, -0.5, -0.5), matrixRotateX4(-Math.PI / 2), matrixRotateY4(Math.PI)], this.floorRenderParams, wallTexture1);
+                } else {
+                    childRenders['f'] = new ShapeRender([matrixRotateY4(pi/2 * rng(4))], this.floorRenderParams, floorTexture);
+                }
+                let ceilingTexture = webglCanvasToTexture(gl, createRepeatingBrickPattern(rng, textureDimension, textureDimension, roofTilesAcross, roofTilesDown, 1 / (rng(roofTilesAcross) + 1), 0, colors.wallUpper, colors.wallUpper, brickRounding, groutWidth, colors.grout));
+                if (tile.type == TILE_TYPE_ROOFLESS) {
+                    childRenders['W'] = new ShapeRender([matrixTranslate4(0.5, 1.5, 0), matrixRotateZ4(-Math.PI / 2), matrixRotateY4(Math.PI / 2)], this.floorRenderParams, wallTexture2);
+                    childRenders['E'] = new ShapeRender([matrixTranslate4(-0.5, 1.5, 0), matrixRotateZ4(Math.PI / 2), matrixRotateY4(-Math.PI / 2)], this.floorRenderParams, wallTexture2);
+                    childRenders['N'] = new ShapeRender([matrixTranslate4(0, 1.5, 0.5), matrixRotateX4(Math.PI / 2)], this.floorRenderParams, wallTexture1);
+                    childRenders['S'] = new ShapeRender([matrixTranslate4(0, 1.5, -0.5), matrixRotateX4(-Math.PI / 2), matrixRotateY4(Math.PI)], this.floorRenderParams, wallTexture1);
+                } else {
+                    childRenders['c'] = new ShapeRender([matrixTranslate4(0, 1, 0), matrixRotateX4(Math.PI)], this.floorRenderParams, ceilingTexture);
+                }
+                this.textures.push(wallTexture1, wallTexture2, ceilingTexture, floorTexture);
             }
             if (tile.entity) {
                 // add the entity render
@@ -289,7 +346,13 @@ class PlayState extends State<HTMLCanvasElement> {
         if (this.cameraEntityRender) {
             let cameraPosition = matrixInvert4(this.cameraEntityRender.position);
             let cameraRotation = this.cameraEntityRender.rotation;
-            let transformStack: Matrix4[] = [this.cameraProjectionMatrix, matrixTranslate4(0, -0.5, -1), cameraRotation, cameraPosition];
+            let transformStack: Matrix4[] = [
+                this.cameraProjectionMatrix,
+                this.cameraEntityRender.facing,
+                //matrixTranslate4(0, -0.5, -0.5),
+                cameraRotation,
+                cameraPosition
+            ];
 
             for (let x = 0; x < this.level.width; x++) {
                 for (let y = 0; y < this.level.height; y++) {

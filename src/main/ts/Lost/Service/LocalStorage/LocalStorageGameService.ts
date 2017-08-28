@@ -23,7 +23,7 @@ class LocalStorageGameService implements GameService {
         localStorage.setItem(this.prefix + game.gameId, JSON.stringify(game));
     }
 
-    getGames(gameIds: string[]): Game[] {
+    getGames(gameIds: GameId[]): Game[] {
         let games: Game[] = [];
         for (let gameId of gameIds) {
             let gameString = localStorage.getItem(this.prefix + gameId);
@@ -35,15 +35,17 @@ class LocalStorageGameService implements GameService {
 
     createGame(): Game {
         let universe = this.getUniverse();
-        let gameId = '_' + universe.nextGameId++;
+        let gameId = universe.nextGameId++;
         universe.gameIds.push(gameId);
         localStorage.setItem(this.prefix, JSON.stringify(universe));
         let now = new Date().toString();
+        let randomNumberSeed = Math.floor(Math.random() * 99999);
         let game: Game = {
             gameId: gameId,
             created: now, 
             nextLevelId: 1,
-            nextEntityId: 1
+            nextEntityId: 1,
+            randomNumberSeed: randomNumberSeed 
         }
         this.saveGame(game);
         return game;
@@ -52,8 +54,7 @@ class LocalStorageGameService implements GameService {
     createLevel(game: Game, width: number, height: number, tiles: Tile[][]): Level {
         let level: Level = {
             gameId: game.gameId,
-            depth: game.nextLevelId,
-            levelId: '_' + game.nextLevelId++,
+            levelId: game.nextLevelId++,
             width: width, 
             height: height, 
             tiles: tiles
@@ -62,8 +63,8 @@ class LocalStorageGameService implements GameService {
         return level;
     }
 
-    getLevel(game: Game, levelId: string): Level {
-        let levelString = localStorage.getItem(this.prefix + game.gameId + levelId);
+    getLevel(game: Game, levelId: LevelId): Level {
+        let levelString = localStorage.getItem(this.prefix + game.gameId + '_' + levelId);
         let level: Level;
         if (levelString) {
             level = JSON.parse(levelString);
@@ -73,7 +74,7 @@ class LocalStorageGameService implements GameService {
 
     saveLevel(game: Game, level: Level): void {
         this.saveGame(game);
-        localStorage.setItem(this.prefix + game.gameId + level.levelId, JSON.stringify(level));
+        localStorage.setItem(this.prefix + game.gameId + '_' + level.levelId, JSON.stringify(level));
     }
 
     

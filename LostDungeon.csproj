@@ -89,7 +89,13 @@
     <TypeScriptCompile Include="src\main\ts\app.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\Animation.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\animationCompositeFactory.ts" />
-    <TypeScriptCompile Include="src\main\ts\Lost\create2DArray.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Animation\animationChainedProxyFactory.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\countSurroundingTiles.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaDataChangeState.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaDataDie.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaDataFall.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Util\copyArray.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Util\create2DArray.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\delegatingStateFactory.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Domain\BehaviorType.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Domain\GameId.ts" />
@@ -100,7 +106,10 @@
     <TypeScriptCompile Include="src\main\ts\Lost\Domain\Universe.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Matrix\matrixInvert4.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Matrix\matrixRotateZ4.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaDataLook.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaDataTurn.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelPopulator.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\Populator\levelPopulatorTileMazeFactory.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Play\Render\EntityRender.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\easingLinearFactory.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\easingQuadraticFactory.ts" />
@@ -152,7 +161,10 @@
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\Easing.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\ValueFactory.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\valueFactoryMatrix4InterpolationFactory.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Util\colorToHex.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Util\createRandomColor.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Util\createRepeatingBrickPattern.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Util\createRandomWallColors.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Util\RandomNumberGenerator.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Util\trigRandomNumberGeneratorFactory.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\WebGL\webglCanvasToTexture.ts" />

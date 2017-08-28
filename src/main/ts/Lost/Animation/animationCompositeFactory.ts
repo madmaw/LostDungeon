@@ -1,15 +1,17 @@
 function animationCompositeFactory(animations: Animation[]): Animation {
 
-    return function (t: number): boolean {
-        for (let i = animations.length; i > 0;) {
+    return function (t: number): number {
+        let count = animations.length;
+        for (let i = count; i > 0;) {
             i--;
             let animation = animations[i];
-            let done = animation(t);
-            if (done) {
+            let running = animation(t);
+            if (!running) {
+                count--;
                 animations.splice(i, 1);
             }
         }
-        return !animations.length;
+        return count;
     }
 
 }

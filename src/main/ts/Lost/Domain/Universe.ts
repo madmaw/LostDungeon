@@ -1,4 +1,4 @@
-﻿interface Universe {
-    gameIds: string[];
+interface Universe {
+    gameIds: GameId[];
     nextGameId: number;
 }

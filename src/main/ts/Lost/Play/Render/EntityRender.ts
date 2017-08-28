@@ -1,4 +1,5 @@
 class EntityRender extends Render {
+    public facing: Matrix4;
 
     constructor(
         public entity: Entity,
@@ -9,6 +10,11 @@ class EntityRender extends Render {
         private transformationUniformLocation: WebGLUniformLocation
     ) {
         super([position, rotation]);
+        this.facing = this.look(-pi/99, .5, .5);
+    }
+
+    look(radians: number, height: number, stepBack): Matrix4 {
+        return matrixMultiply4(matrixRotateX4(radians), matrixTranslate4(0, -height, -stepBack))
     }
 
     consume(t: number, delta: LevelDelta): Animation {
@@ -18,21 +24,71 @@ class EntityRender extends Render {
                 let moveData = <LevelDeltaDataMove>delta.data;
                 let dpos = ORIENTATION_DIFFS[moveData.direction];
                 let targetPosition = matrixTranslate4(moveData.fromX + dpos.x, 0, moveData.fromY + dpos.y);
-                animation = animationTweenFactory(t, easingQuadraticFactory(.005), effectSetPropertyFactory(this, 'position', valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.position), targetPosition)));
+                animation = animationTweenFactory(
+                    t,
+                    easingQuadraticFactory(.004),
+                    effectSetPropertyFactory(this, 'position', valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.position), targetPosition))
+                );
                 break;
             case LEVEL_DELTA_TYPE_TURN:
                 let turnData = <LevelDeltaDataTurn>delta.data;
                 let fromAngle = ORIENTATION_ANGLES[turnData.fromOrientation];
                 let toAngle = ORIENTATION_ANGLES[turnData.toOrientation];
                 while (toAngle < fromAngle) {
-                    toAngle += Math.PI * 2;
+                    toAngle += pi * 2;
                 }
                 let angle = toAngle - fromAngle;
                 while (angle > Math.PI) {
-                    angle -= Math.PI * 2;
+                    angle -= pi * 2;
                 }
                 let targetRotation = matrixRotateY4(toAngle);
-                animation = animationTweenFactory(t, easingQuadraticFactory(.003 * Math.abs(angle)), effectSetPropertyFactory(this, 'rotation', valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.rotation), targetRotation)))
+                animation = animationTweenFactory(
+                    t,
+                    easingQuadraticFactory(.002 * Math.abs(angle)),
+                    effectSetPropertyFactory(this, 'rotation', valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.rotation), targetRotation))
+                );
+                break;
+            case LEVEL_DELTA_TYPE_LOOK_DOWN:
+                animation = animationTweenFactory(
+                    t,
+                    easingQuadraticFactory(.004),
+                    effectSetPropertyFactory(
+                        this,
+                        'facing',
+                        valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.facing), this.look(-pi / 3, .75, .3))
+                    )
+                );
+                break;
+            case LEVEL_DELTA_TYPE_LOOK_UP:
+                animation = animationTweenFactory(
+                    t,
+                    easingQuadraticFactory(.004),
+                    effectSetPropertyFactory(this, 'facing', valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.facing), this.look(-pi / 99, .5, .5)))
+                );
+                break;
+            case LEVEL_DELTA_TYPE_FALL:
+                let fallData = <LevelDeltaDataFall>delta.data;
+                animation = animationChainedProxyFactory(
+                    animationTweenFactory(
+                        t,
+                        easingQuadraticFactory(.002),
+                        effectSetPropertyFactory(this, 'facing', valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.facing), this.look(-pi / 2, 0, 0)))
+                    ),
+                    (t: number) => {
+                        return animationTweenFactory(
+                            t,
+                            easingQuadraticFactory(.009),
+                            effectSetPropertyFactory(this, 'facing', valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.facing), this.look(-pi / 2, -1, 0)))
+                        );
+                    }
+                );
+                break;
+            case LEVEL_DELTA_TYPE_DROP_IN:
+                animation = animationTweenFactory(
+                    t,
+                    easingQuadraticFactory(.001),
+                    effectSetPropertyFactory(this, 'facing', valueFactoryMatrix4InterpolationFactory(this.look(-pi / 2, 1.5, 0), this.look(-pi / 99, .5, .5)))
+                );
                 break;
         }
         return animation;

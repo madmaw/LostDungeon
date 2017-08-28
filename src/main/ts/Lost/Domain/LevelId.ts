@@ -1,1 +1,1 @@
-﻿type LevelId = string;
+type LevelId = number;

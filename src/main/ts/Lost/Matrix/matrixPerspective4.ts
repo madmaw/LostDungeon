@@ -1,4 +1,4 @@
-﻿function matrixPerspective4(fovy, aspect, znear, zfar): Matrix4 {
+function matrixPerspective4(fovy, aspect, znear, zfar): Matrix4 {
 
     /*
     var fieldOfViewInRadians = fovy * Math.PI / 180;
@@ -13,7 +13,7 @@
     ];
     */
 
-    var top = znear * Math.tan(fovy * Math.PI / 360.0);
+    var top = znear * Math.tan(fovy / 2);
     var bottom = -top;
     var left = bottom * aspect;
     var right = top * aspect;

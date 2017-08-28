@@ -1,6 +1,6 @@
 ///<reference path="PlayState.ts"/>
 
-function playStateFactory(gameService: GameService): StateFactory {
+function playStateFactory(gameService: GameService, levelPopulator: LevelPopulator): StateFactory {
     return function (stateTypeId: StateTypeId, data: PlayStateData) {
         let game = data.game;
 
@@ -13,13 +13,13 @@ function playStateFactory(gameService: GameService): StateFactory {
         let level = gameService.getLevel(game, levelId);
         if (!level) {
             // need to create a level
-            let width = 5;
-            let height = 5;
-            let startX = Math.floor(Math.random() * width);
-            let startY = Math.floor(Math.random() * height);
-            startX = 2;
-            startY = 4;
-            let tiles = create2DArray(width, height, function(x: number, y: number) {
+            let rng = trigRandomNumberGeneratorFactory(game.randomNumberSeed + levelId * 999);
+            let squareSide = 7 + (levelId>>1);
+            let area = squareSide * squareSide + levelId;
+            let width = squareSide + rng(squareSide/4) - rng(squareSide/4);
+            let height = Math.ceil(area / width);
+            let tiles = create2DArray(width, height, function (x: number, y: number) {
+                /*
                 let name: string;
                 if (x == startX && y == startY && data.playerTransition) { 
                     name = data.playerTransition.location.tileName;
@@ -30,15 +30,52 @@ function playStateFactory(gameService: GameService): StateFactory {
                 } else {
                     type = TILE_TYPE_FLOOR;
                 }
+                */
                 let tile: Tile = {
-                    type: type,
-                    name: name   
+                    type: TILE_TYPE_SOLID
                 };
                 return tile;
             });
+            levelPopulator(rng, tiles, width, height, levelId);
+
+            // add in a start point and an exit
+
+            let featureCount = 0;
+            let attemptsRemaining = 99;
+            o: while (1) {
+                let tx = rng(width);
+                let ty = rng(height);
+                let tile = tiles[tx][ty];
+                let justDoIt = attemptsRemaining < 0;
+                attemptsRemaining--;
+                if (justDoIt) {
+                    console.log('gave up searching!');
+                }
+                if ((tile.type == TILE_TYPE_FLOOR || justDoIt || featureCount) && tile.name != data.playerTransition.location.tileName) {
+                    let floors = countSurroundingTiles(tiles, width, height, tx, ty, function (tile: Tile) {
+                        return tile.type == TILE_TYPE_FLOOR ? 1 : 0;
+                    });
+
+                    if (floors == 1 || featureCount && tile.type == TILE_TYPE_SOLID && floors || justDoIt) {
+                        switch (featureCount) {
+                            case 0:
+                                tile.name = data.playerTransition.location.tileName;
+                                tile.type = TILE_TYPE_ROOFLESS;
+                                break;
+                            case 1:
+                                tile.type = TILE_TYPE_PIT;
+                                break o;
+                        }
+                        featureCount++;
+                    }
+                }
+            }
+
+
             level = gameService.createLevel(game, width, height, tiles);
         }
         let viewer: Entity;
+        let deltas: LevelDelta[];
         if (data.playerTransition) {
             // need to add the player to the level at the specified spot
             let tile = levelFindTile(level, function(tile: Tile) {
@@ -49,14 +86,32 @@ function playStateFactory(gameService: GameService): StateFactory {
             }
             viewer = data.playerTransition.entity;
             tile.entity = viewer;
+
+            deltas = [{
+                type: LEVEL_DELTA_TYPE_DROP_IN,
+                data: {
+                    entity: viewer
+                }
+            }];
         } else {
             let tile = levelFindTile(level, function (tile: Tile) {
                 return tile.entity && tile.entity.behaviorType == BEHAVIOR_TYPE_PLAYER;
             });
             viewer = tile.entity;
         }
+        for (let y = 0; y < level.height; y++) {
+            let s = '' + y + ':';
+            for (let x = 0; x < level.width; x++) {
+                let tile = level.tiles[x][y];
+                s += tile.type == TILE_TYPE_SOLID ? '#' : (tile.type == TILE_TYPE_FLOOR ? ' ' : tile.type.toString());
+            }
+            console.log(s);
+        }
+
+
         game.playerLevelId = level.levelId;
         gameService.saveLevel(game, level);
-        return new PlayState(gameService, game, level, viewer);
+        let state = new PlayState(gameService, game, level, viewer, deltas);
+        return state;
     }
 }

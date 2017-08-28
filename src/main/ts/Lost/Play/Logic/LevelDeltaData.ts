@@ -1,1 +1,7 @@
-type LevelDeltaData = LevelDeltaDataMove | LevelDeltaDataTurn;
+type LevelDeltaData =
+    LevelDeltaDataMove |
+    LevelDeltaDataTurn |
+    LevelDeltaDataLook |
+    LevelDeltaDataFall |
+    LevelDeltaDataChangeState |
+    LevelDeltaDataDie;

@@ -10,7 +10,8 @@ function createRepeatingBrickPattern(
     lowerBrickColor: string,
     brickRounding: number,
     groutWidth: number,
-    groutColor: string
+    groutColor: string,
+    text?: string
 ): HTMLCanvasElement {
 
     let brickWidth = (width - groutWidth * (bricksAcross)) / bricksAcross;
@@ -32,15 +33,16 @@ function createRepeatingBrickPattern(
     ctx.fillStyle = brickColor;
 
     ctx.strokeStyle = groutColor;
-    ctx.lineWidth = groutWidth * 2;
 
+    let count = 0;
     let y = groutWidth / 2;
     let xoffset = initialBrickOffset;
     while (y < height) {
         let x = xoffset - brickWidth - groutWidth;
         while (x < width) {
             //ctx.fillRect(x, y, brickWidth, brickHeight);
-            if (x > groutWidth && x < width - brickWidth - groutWidth) {
+            let whole = x >= 0 && x < width - brickWidth;
+            if (whole) {
                 let r = rng();
                 ctx.globalAlpha = (1 - r * r * r * r * 0.3);
             }
@@ -58,16 +60,25 @@ function createRepeatingBrickPattern(
             ctx.fill();
 
             ctx.globalAlpha = 0.3;
+            ctx.lineWidth = groutWidth * 2;
             ctx.stroke();
             ctx.globalAlpha = 1;
+
+            if (text && whole) {
+                let c = text[count++%text.length];
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top'
+                ctx.font = '' + brickHeight + 'px serif';
+                let fontSize = brickHeight;
+                ctx.lineWidth = groutWidth / 2;
+                ctx.strokeText(c, x + brickWidth / 2, y);
+            }
 
             x += brickWidth + groutWidth;
         }
         xoffset = (xoffset + brickOffset) % brickWidth;
         y += brickHeight + groutWidth;
     }
-
-    console.log(canvas.toDataURL());
 
     return canvas;
 }

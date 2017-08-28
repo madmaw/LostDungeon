@@ -3,4 +3,5 @@ interface Entity {
     orientation: Orientation;
     side: number;
     behaviorType: BehaviorType;
+    lookingDown?: boolean;
 }

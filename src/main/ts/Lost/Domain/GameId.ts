@@ -1,1 +1,1 @@
-﻿type GameId = string
+type GameId = number

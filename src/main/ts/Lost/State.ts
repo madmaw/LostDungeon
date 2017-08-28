@@ -1,4 +1,4 @@
-﻿class State<ElementType extends HTMLElement> {
+class State<ElementType extends HTMLElement> {
 
     protected element: ElementType;
     protected stateListener: StateListener;

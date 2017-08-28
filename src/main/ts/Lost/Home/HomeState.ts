@@ -10,6 +10,12 @@ class HomeState extends State<HTMLElement> {
 
         let universe = this.gameService.getUniverse();
 
+        let dimension = this.element.clientHeight;
+        let rng = trigRandomNumberGeneratorFactory();
+        let colors = createRandomWallColors(rng);
+        let backgroundImage = createRepeatingBrickPattern(rng, dimension, dimension, 6, 9, 0.5, 0, colors.wallUpper, colors.wallLower, 6, 1, colors.grout, 'LOST DUNGEON ');
+        this.element.setAttribute('style', 'background-image:url(' + backgroundImage.toDataURL() + ')');
+
         // add listeners
         let newGameElement = document.getElementById('n');
         newGameElement.onclick = () => {
@@ -25,7 +31,7 @@ class HomeState extends State<HTMLElement> {
                 playerTransition: {
                     entity: playerEntity,
                     location: {
-                        levelId: '_' + game.nextLevelId,
+                        levelId: game.nextLevelId,
                         tileName: 's'
                     }
                 }
@@ -42,7 +48,7 @@ class HomeState extends State<HTMLElement> {
         let games = this.gameService.getGames(universe.gameIds);
         for (let game of games) {
             let a = document.createElement('a');
-            a.innerText = 'Game ' + game.gameId;
+            a.innerHTML = '<h2>Game ' + game.gameId;
             a.setAttribute('href', '#' + game.gameId);
             a.onclick = ((game: Game) => {
                 return () => {

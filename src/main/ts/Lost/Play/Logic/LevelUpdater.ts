@@ -20,7 +20,13 @@ class LevelUpdater {
 
         this.inputHandlers = {};
         this.inputHandlers[INPUT_TYPE_MOVE_FORWARD] = (entity: Entity) => {
-            return this.moveForward(entity);
+            let result;
+            if (entity.lookingDown) {
+                result = this.look(entity, false);
+            } else {
+                result = this.moveForward(entity);
+            }
+            return result;
         };
         this.inputHandlers[INPUT_TYPE_TURN_LEFT] = (entity: Entity) => {
             let orientation = entity.orientation - 1;
@@ -31,6 +37,9 @@ class LevelUpdater {
         };
         this.inputHandlers[INPUT_TYPE_TURN_RIGHT] = (entity: Entity) => {
             return this.turnToOrientation(entity, (entity.orientation + 1)%4);
+        };
+        this.inputHandlers[INPUT_TYPE_LOOK_DOWN] = (entity: Entity) => {
+            return this.look(entity, true);
         };
     }
 
@@ -97,6 +106,7 @@ class LevelUpdater {
         let y = pos.y + dpos.y;
         let valid = x >= 0 && y >= 0 && x < this.level.width && y < this.level.height;
         let deltaType: LevelDeltaType = LEVEL_DELTA_TYPE_MOVE_INVALID;
+        let children: LevelDelta[];
         let moveData: LevelDeltaDataMove = {
             direction: orientation,
             fromX: pos.x,
@@ -113,6 +123,46 @@ class LevelUpdater {
                 targetTile.entity = entity;
                 // update the deltas
                 deltaType = LEVEL_DELTA_TYPE_MOVE;
+
+                // did we move onto a pit?
+                if (targetTile.type == TILE_TYPE_PIT) {
+                    let fallChildren: LevelDelta[] = [{
+                        type: LEVEL_DELTA_TYPE_DIE,
+                        data: {
+                            entity: entity
+                        }
+                    }];
+                    if (entity.behaviorType == BEHAVIOR_TYPE_PLAYER) {
+                        fallChildren.push({
+                            type: LEVEL_DELTA_TYPE_CHANGE_STATE,
+                            data: {
+                                stateTypeId: STATE_TYPE_PLAY,
+                                stateData: {
+                                    game: this.game,
+                                    playerTransition: {
+                                        entity: entity,
+                                        location: {
+                                            levelId: this.game.nextLevelId++,
+                                            tileName: 's' 
+                                        }
+                                    }
+
+                                }
+                            }
+                        });
+                    }
+                    children = [
+                        {
+                            type: LEVEL_DELTA_TYPE_FALL,
+                            data: {
+                                entity: entity,
+                                tileX: pos.x,
+                                tileY: pos.y
+                            },
+                            children: fallChildren
+                        }
+                    ]
+                }
             }
         }
         return {
@@ -120,9 +170,24 @@ class LevelUpdater {
             deltas: [
                 {
                     type: deltaType,
-                    data: moveData
+                    data: moveData,
+                    children: children
                 }
             ]
         }
+    }
+
+    look(entity: Entity, down: boolean): ActionResult {
+        let deltas: LevelDelta[];
+        if (entity.lookingDown != down) {
+            entity.lookingDown = down;
+            deltas = [{
+                type: down ? LEVEL_DELTA_TYPE_LOOK_DOWN : LEVEL_DELTA_TYPE_LOOK_UP
+            }]            
+        }
+        return {  
+            deltas: deltas
+        };
+
     }
 }

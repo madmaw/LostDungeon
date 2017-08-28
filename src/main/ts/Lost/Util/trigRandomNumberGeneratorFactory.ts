@@ -1,4 +1,8 @@
-function trigRandomNumberGeneratorFactory(seed: number): RandomNumberGenerator {
+function trigRandomNumberGeneratorFactory(seed?: number): RandomNumberGenerator {
+
+    if (!seed) {
+        seed = Math.ceil(Math.random() * 999);
+    }
 
     return function (range?: number) {
         var x = Math.sin(seed++) * 10000;
