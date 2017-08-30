@@ -31,8 +31,27 @@ function playStateFactory(gameService: GameService, levelPopulator: LevelPopulat
                     type = TILE_TYPE_FLOOR;
                 }
                 */
+                let dice: Dice = {
+                    diceId: game.nextEntityId++,
+                    level: rng(5),
+                    symbols: [
+                        [DICE_SYMBOL_ATTACK],
+                        [DICE_SYMBOL_ATTACK, DICE_SYMBOL_DEFEND, DICE_SYMBOL_RESOURCE_FIRE, DICE_SYMBOL_RESOURCE_FIRE],
+                        [DICE_SYMBOL_DEFEND],
+                        [DICE_SYMBOL_RESOURCE_FIRE, DICE_SYMBOL_RESOURCE_FIRE, DICE_SYMBOL_RESOURCE_FIRE, DICE_SYMBOL_RESOURCE_FIRE],
+                        [DICE_SYMBOL_RESOURCE_LIFE, DICE_SYMBOL_RESOURCE_LIFE, DICE_SYMBOL_RESOURCE_LIFE],
+                        [DICE_SYMBOL_RESOURCE_FIRE, DICE_SYMBOL_RESOURCE_LIFE, DICE_SYMBOL_RESOURCE_WATER, DICE_SYMBOL_DEFEND]
+                    ],
+                    type: rng(4)
+                }
                 let tile: Tile = {
-                    type: TILE_TYPE_SOLID
+                    type: TILE_TYPE_SOLID,
+                    dice: {
+                        1: {
+                            dice: dice,
+                            face: rng(6)
+                        }
+                    }
                 };
                 return tile;
             });

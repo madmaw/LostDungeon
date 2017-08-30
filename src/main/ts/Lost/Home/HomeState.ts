@@ -38,7 +38,8 @@ class HomeState extends State<HTMLElement> {
                 orientation: ORIENTATION_NORTH,
                 side: 1,
                 id: game.nextEntityId++,
-                behaviorType: BEHAVIOR_TYPE_PLAYER
+                behaviorType: BEHAVIOR_TYPE_PLAYER,
+                dice: []
             };
             let data: PlayStateData = {
                 game: game,

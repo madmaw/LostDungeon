@@ -8,7 +8,7 @@ function animationChainedProxyFactory<T>(
         let running = animation(t);
         if (!running && nextAnimationFactory) {
             animation = nextAnimationFactory(t, param);
-            nextAnimationFactory = null;
+            nextAnimationFactory = nil;
             if (animation) {
                 running = 1;
             }

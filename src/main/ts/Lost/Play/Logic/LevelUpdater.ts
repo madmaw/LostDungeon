@@ -65,9 +65,12 @@ class LevelUpdater {
             this.waitingOnInput = this.inputQueue.length == 0;
             if (!this.waitingOnInput) {
                 let input = this.inputQueue.splice(0, 1)[0];
-                let action: ActionResult = this.inputHandlers[input.type](entity, input.data);
-                moveToNext = action.moveToNext;
-                deltas = action.deltas;
+                let inputHandler = this.inputHandlers[input.type];
+                if (inputHandler) {
+                    let action: ActionResult = inputHandler(entity, input.data);
+                    moveToNext = action.moveToNext;
+                    deltas = action.deltas;
+                }
             }
         } else {
             // do some AI stuff

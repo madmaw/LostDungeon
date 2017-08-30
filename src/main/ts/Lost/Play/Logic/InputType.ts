@@ -5,3 +5,5 @@ const INPUT_TYPE_MOVE_FORWARD: InputType = 1;
 const INPUT_TYPE_TURN_LEFT: InputType = 2;
 const INPUT_TYPE_TURN_RIGHT: InputType = 3;
 const INPUT_TYPE_LOOK_DOWN: InputType = 4;
+const INPUT_TYPE_COLLECT_DICE: InputType = 5;
+const INPUT_TYPE_PLAY_DICE: InputType = 6;

@@ -10,7 +10,7 @@ class EntityRender extends Render {
         private transformationUniformLocation: WebGLUniformLocation
     ) {
         super([position, rotation]);
-        this.facing = this.look(-pi/99, .5, .5);
+        this.facing = this.look(-pi/9, .8, .5);
     }
 
     look(radians: number, height: number, stepBack): Matrix4 {
@@ -48,7 +48,7 @@ class EntityRender extends Render {
                     effectSetPropertyFactory(
                         this,
                         'facing',
-                        valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.facing), this.look(-pi / 3, .75, .3))
+                        valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.facing), this.look(-pi / 3, 1, .3))
                     )
                 );
                 break;
@@ -56,7 +56,7 @@ class EntityRender extends Render {
                 animation = animationTweenFactory(
                     t,
                     easingQuadraticFactory(.004),
-                    effectSetPropertyFactory(this, 'facing', valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.facing), this.look(-pi / 99, .5, .5)))
+                    effectSetPropertyFactory(this, 'facing', valueFactoryMatrix4InterpolationFactory(matrixCopy4(this.facing), this.look(-pi / 9, .8, .5)))
                 );
                 break;
             case LEVEL_DELTA_TYPE_FALL:
@@ -80,14 +80,14 @@ class EntityRender extends Render {
                 animation = animationTweenFactory(
                     t,
                     easingQuadraticFactory(.001),
-                    effectSetPropertyFactory(this, 'facing', valueFactoryMatrix4InterpolationFactory(this.look(-pi / 2, 1.5, 0), this.look(-pi / 99, .5, .5)))
+                    effectSetPropertyFactory(this, 'facing', valueFactoryMatrix4InterpolationFactory(this.look(-pi / 2, 1.5, 0), this.look(-pi / 9, .8, .5)))
                 );
                 break;
         }
         return animation;
     }
 
-    doDraw(gl: WebGLRenderingContext, transformStack: Matrix4[]): void {
+    doDraw(gl: WebGLRenderingContext, transformStack: Matrix4[], pickTexture: boolean): void {
         // don't actually draw the player
         if (this.entity.behaviorType != BEHAVIOR_TYPE_PLAYER) {
             let transform = matrixMultiplyStack4(transformStack);

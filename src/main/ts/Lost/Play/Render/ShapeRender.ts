@@ -70,43 +70,47 @@ class ShapeRender extends Render {
         };
     }
 
-    constructor(localTransforms: Matrix4[], private params: ShapeRenderParams, private texture: WebGLTexture) {
+    constructor(localTransforms: Matrix4[], private params: ShapeRenderParams, private texture: WebGLTexture, private pickTexture?: WebGLTexture) {
         super(localTransforms);
     }
 
-    doDraw(gl: WebGLRenderingContext, transformStack: Matrix4[]): void {
-        let transform = matrixMultiplyStack4(transformStack);
-        let params = this.params;
+    doDraw(gl: WebGLRenderingContext, transformStack: Matrix4[], pickTexture: boolean): void {
+        let texture = pickTexture ? this.pickTexture : this.texture;
+        if (texture) {
+            let transform = matrixMultiplyStack4(transformStack);
+            let params = this.params;
 
-        // vertices
-        gl.bindBuffer(gl.ARRAY_BUFFER, params.vertexBuffer);
-        gl.vertexAttribPointer(params.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(params.aVertexPosition);
+            // vertices
+            gl.bindBuffer(gl.ARRAY_BUFFER, params.vertexBuffer);
+            gl.vertexAttribPointer(params.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(params.aVertexPosition);
 
-        // texture coordinates
-        gl.bindBuffer(gl.ARRAY_BUFFER, params.textureCoordinatesBuffer);
-        gl.vertexAttribPointer(
-            params.aTextureCoord,
-            2,
-            gl.FLOAT,
-            false,
-            0,
-            0
-        );
-        gl.enableVertexAttribArray(params.aTextureCoord);
+            // texture coordinates
+            gl.bindBuffer(gl.ARRAY_BUFFER, params.textureCoordinatesBuffer);
+            gl.vertexAttribPointer(
+                params.aTextureCoord,
+                2,
+                gl.FLOAT,
+                false,
+                0,
+                0
+            );
+            gl.enableVertexAttribArray(params.aTextureCoord);
 
-        // indices
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, params.indexBuffer);
+            // indices
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, params.indexBuffer);
 
-        gl.uniformMatrix4fv(params.uTransform, false, transform);
+            gl.uniformMatrix4fv(params.uTransform, false, transform);
 
-        // texture
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        gl.uniform1i(params.uSampler, 0);
+            // texture
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.uniform1i(params.uSampler, 0);
 
-        // draw
-        gl.drawElements(gl.TRIANGLES, params.indexBufferLength, gl.UNSIGNED_SHORT, 0);
+            // draw
+            gl.drawElements(gl.TRIANGLES, params.indexBufferLength, gl.UNSIGNED_SHORT, 0);
+
+        }
 
     }
 
