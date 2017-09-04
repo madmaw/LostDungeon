@@ -10,25 +10,27 @@ class HomeState extends State<HTMLElement> {
 
         let universe = this.gameService.getUniverse();
 
-        let dimension = this.element.clientHeight;
+        let element = this.element;
+        let dimension = element.clientHeight;
         let rng = trigRandomNumberGeneratorFactory();
         let colors = createRandomWallColors(rng);
         let backgroundImage = createRepeatingBrickPattern(
             rng,
             dimension,
             dimension,
-            6,
-            9,
-            0.5,
+            5,
+            8,
+            .5,
             0,
             colors.wallUpper,
             colors.wallLower,
-            6,
-            1,
+            4,
+            .5,
             colors.grout,
             'LOST DUNGEON '.split('')
         );
-        this.element.setAttribute('style', 'background-image:url(' + backgroundImage.toDataURL() + ')');
+        let dataURL = backgroundImage.toDataURL();
+        element.setAttribute('style', 'background-image:url(' + dataURL + ')');
 
         // add listeners
         let newGameElement = document.getElementById('n');
@@ -39,7 +41,9 @@ class HomeState extends State<HTMLElement> {
                 side: 1,
                 id: game.nextEntityId++,
                 behaviorType: BEHAVIOR_TYPE_PLAYER,
-                dice: []
+                dice: [],
+                healthSlots: 2,
+                diceSlots: 8
             };
             let data: PlayStateData = {
                 game: game,
@@ -47,7 +51,7 @@ class HomeState extends State<HTMLElement> {
                     entity: playerEntity,
                     location: {
                         levelId: game.nextLevelId,
-                        tileName: 's'
+                        tileName: '11'
                     }
                 }
             };

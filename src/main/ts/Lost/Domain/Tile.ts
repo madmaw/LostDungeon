@@ -7,5 +7,5 @@ interface Tile {
     type: TileType;
     entity?: Entity;
     name?: string;
-    dice: { [_: number]: DiceAndFace };
+    dice: { [_: string]: DiceAndFace };
 }

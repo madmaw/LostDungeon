@@ -1,6 +1,6 @@
 interface Animation {
     /**
-     * returns 0 when done
+     * returns true when done
      */
-    (t: number): number;
+    (t: number): boolean;
 }

@@ -12,6 +12,7 @@ function createPickTexture(id: number): HTMLCanvasElement {
     }
     color = '#' + color;
 
+
     ctx.fillStyle = color;
     ctx.fillRect(0, 0, width, height);
 

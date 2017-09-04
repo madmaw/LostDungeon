@@ -4,7 +4,7 @@ class LevelUpdater {
     private currentTurnEntityIndex: number;
     private inputQueue: Input[];
     private waitingOnInput: boolean;
-    private inputHandlers: { [_: number]: (entity: Entity, data: InputData) => ActionResult };
+    
 
     constructor(private game: Game, private level: Level) {
         this.entitiesInOrder = [];
@@ -18,29 +18,6 @@ class LevelUpdater {
         this.currentTurnEntityIndex = 0;
         this.inputQueue = [];
 
-        this.inputHandlers = {};
-        this.inputHandlers[INPUT_TYPE_MOVE_FORWARD] = (entity: Entity) => {
-            let result;
-            if (entity.lookingDown) {
-                result = this.look(entity, false);
-            } else {
-                result = this.moveForward(entity);
-            }
-            return result;
-        };
-        this.inputHandlers[INPUT_TYPE_TURN_LEFT] = (entity: Entity) => {
-            let orientation = entity.orientation - 1;
-            if (orientation < ORIENTATION_NORTH) {
-                orientation = ORIENTATION_WEST;
-            }
-            return this.turnToOrientation(entity, orientation);
-        };
-        this.inputHandlers[INPUT_TYPE_TURN_RIGHT] = (entity: Entity) => {
-            return this.turnToOrientation(entity, (entity.orientation + 1)%4);
-        };
-        this.inputHandlers[INPUT_TYPE_LOOK_DOWN] = (entity: Entity) => {
-            return this.look(entity, true);
-        };
     }
 
     sortEntitiesInOrder() {
@@ -65,9 +42,36 @@ class LevelUpdater {
             this.waitingOnInput = this.inputQueue.length == 0;
             if (!this.waitingOnInput) {
                 let input = this.inputQueue.splice(0, 1)[0];
-                let inputHandler = this.inputHandlers[input.type];
-                if (inputHandler) {
-                    let action: ActionResult = inputHandler(entity, input.data);
+                let action: ActionResult;
+                switch (input.type) {
+                    case INPUT_TYPE_LOOK_DOWN:
+                        action = this.look(entity, <any>1);
+                        break;
+                    case INPUT_TYPE_MOVE_FORWARD:
+                        if (entity.lookingDown) {
+                            action = this.look(entity);
+                        } else {
+                            action = this.moveForward(entity);
+                        }
+                        break;
+                    case INPUT_TYPE_TURN_LEFT:
+                        let orientation = entity.orientation - 1;
+                        if (orientation < ORIENTATION_NORTH) {
+                            orientation = ORIENTATION_WEST;
+                        }
+                        action = this.turnToOrientation(entity, orientation);
+                        break;
+                    case INPUT_TYPE_TURN_RIGHT:
+                        action = this.turnToOrientation(entity, (entity.orientation + 1) % 4);
+                        break;
+                    case INPUT_TYPE_COLLECT_DICE:
+                        action = this.collectDice(entity, <InputDataCollectDice>input.data);
+                        break;
+                    case INPUT_TYPE_PLAY_DICE:
+                        action = this.playDice(entity, <InputDataPlayDice>input.data);
+                        break;
+                }
+                if (action) {
                     moveToNext = action.moveToNext;
                     deltas = action.deltas;
                 }
@@ -93,6 +97,7 @@ class LevelUpdater {
             deltas: [{
                 type: LEVEL_DELTA_TYPE_TURN,
                 data: {
+                    entity: entity,
                     fromOrientation: oldOrientation,
                     toOrientation: orientation
                 }
@@ -145,8 +150,8 @@ class LevelUpdater {
                                     playerTransition: {
                                         entity: entity,
                                         location: {
-                                            levelId: this.game.nextLevelId+1,
-                                            tileName: 's' 
+                                            levelId: this.game.nextLevelId,
+                                            tileName: targetTile.name
                                         }
                                     }
 
@@ -180,17 +185,116 @@ class LevelUpdater {
         }
     }
 
-    look(entity: Entity, down: boolean): ActionResult {
+    look(entity: Entity, down?: boolean): ActionResult {
         let deltas: LevelDelta[];
         if (entity.lookingDown != down) {
             entity.lookingDown = down;
             deltas = [{
-                type: down ? LEVEL_DELTA_TYPE_LOOK_DOWN : LEVEL_DELTA_TYPE_LOOK_UP
+                type: down ? LEVEL_DELTA_TYPE_LOOK_DOWN : LEVEL_DELTA_TYPE_LOOK_UP,
+                data: {
+                    entity: entity
+                }
             }]            
         }
         return {  
             deltas: deltas
         };
 
+    }
+
+    collectDice(entity: Entity, data: InputDataCollectDice): ActionResult {
+        let deltas: LevelDelta[];
+        // is the entity close enough?
+        let entityPos = levelGetPosition(this.level, entity);
+        let diff = abs(entityPos.x - data.tileX) + abs(entityPos.y - data.tileY);
+
+        if (diff <= 1 && entity.dice.length < entity.diceSlots) {
+            let fromTile = this.level.tiles[data.tileX][data.tileY];
+            let diceAndFace = fromTile.dice[data.position];
+            fromTile.dice[data.position] = nil;
+            entity.dice.push(diceAndFace.dice);
+            deltas = [{
+                type: LEVEL_DELTA_TYPE_COLLECT_DICE,
+                data: <LevelDeltaDataCollectDice>{
+                    entity: entity,
+                    dice: diceAndFace.dice,
+                    fromTileX: data.tileX,
+                    fromTileY: data.tileY,
+                    fromTilePosition: data.position,
+                    fromFace: diceAndFace.face
+                }
+            }];
+        }
+        return {
+            deltas: deltas
+        }
+    }
+
+    playDice(entity: Entity, data: InputDataPlayDice): ActionResult {
+        let deltas: LevelDelta[];
+
+        let entityPos = levelGetPosition(this.level, entity);
+        let toTileX: number;
+        let toTileY: number;
+        let targetOrientation: Orientation;
+        let slots: { [_: number]: TileSlot };
+        if (entity.lookingDown) {
+            // play to current tile
+            toTileX = entityPos.x;
+            toTileY = entityPos.y;
+            targetOrientation = entity.orientation;
+            slots = TILE_SLOTS_DEFENSIVE;
+        } else {
+            // play to oriented tile
+            let delta = ORIENTATION_DIFFS[entity.orientation];
+            toTileX = entityPos.x + delta.x;
+            toTileY = entityPos.y + delta.y;
+            targetOrientation = (entity.orientation + 2) % 4;
+            slots = TILE_SLOTS_OFFENSIVE;
+        }
+        let success: boolean;
+        if (toTileX >= 0 && toTileY >= 0 && toTileX < this.level.width && toTileY < this.level.height) {
+            // find a free slot on the tile that best matches our target orientation
+            let tile = this.level.tiles[toTileX][toTileY];
+            
+            if (tile.type != TILE_TYPE_SOLID) {
+                let targetDiff = ORIENTATION_DIFFS[targetOrientation];
+                let targetSlotKey = getBestAvailableTileSlotKey(slots, tile, targetDiff.x, targetDiff.y);
+                if (targetSlotKey != nil) {
+                    arrayForEach(entity.dice, function (dice: Dice, index: number) {
+                        if (dice.diceId == data.diceId) {
+                            let dice = entity.dice.splice(index, 1)[0];
+                            let face = floor(random() * 6);
+                            tile.dice[targetSlotKey] = {
+                                dice: dice,
+                                face: face
+                            };
+
+                            // find the dice
+                            deltas = [{
+                                type: LEVEL_DELTA_TYPE_PLAY_DICE,
+                                data: {
+                                    entity: entity,
+                                    dice: dice,
+                                    toFace: face,
+                                    toTileX: toTileX,
+                                    toTileY: toTileY,
+                                    toTilePosition: targetSlotKey
+                                }
+                            }];
+
+                            // TODO if we are throwing it into a pit, kill the dice on landing
+                            success = <any>1;
+                        }
+                    });
+                }
+            }
+
+        }
+        return {
+            moveToNext: success,
+            deltas: deltas
+        }
+        
     }
 }

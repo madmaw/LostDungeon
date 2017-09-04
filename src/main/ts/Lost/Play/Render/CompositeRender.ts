@@ -4,7 +4,7 @@ class CompositeRender extends Render {
 
     constructor(
         localTransforms: Matrix4[],
-        private children: {[_:string]: Render}
+        public children: {[_:string]: Render}
     ) {
         super(localTransforms);
     }

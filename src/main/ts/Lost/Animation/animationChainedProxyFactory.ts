@@ -1,18 +1,18 @@
 function animationChainedProxyFactory<T>(
     originalAnimation: Animation,
-    nextAnimationFactory: (t: number, param?: T) => Animation,
+    nextAnimationFactory: (t: number, param?: T) => void | Animation,
     param?: T
 ): Animation {
     let animation = originalAnimation;
-    return function (t: number): number {
-        let running = animation(t);
-        if (!running && nextAnimationFactory) {
-            animation = nextAnimationFactory(t, param);
+    return function (t: number): boolean {
+        let done = animation(t);
+        if (done && nextAnimationFactory) {
+            animation = <Animation>nextAnimationFactory(t, param);
             nextAnimationFactory = nil;
             if (animation) {
-                running = 1;
+                done = <any>0;
             }
         }
-        return running;
+        return done;
     }
 }

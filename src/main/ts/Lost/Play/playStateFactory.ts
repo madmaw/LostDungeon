@@ -17,7 +17,7 @@ function playStateFactory(gameService: GameService, levelPopulator: LevelPopulat
             let squareSide = 7 + (levelId>>1);
             let area = squareSide * squareSide + levelId;
             let width = squareSide + rng(squareSide/4) - rng(squareSide/4);
-            let height = Math.ceil(area / width);
+            let height = ceil(area / width);
             let tiles = create2DArray(width, height, function (x: number, y: number) {
                 /*
                 let name: string;
@@ -31,6 +31,7 @@ function playStateFactory(gameService: GameService, levelPopulator: LevelPopulat
                     type = TILE_TYPE_FLOOR;
                 }
                 */
+                /*
                 let dice: Dice = {
                     diceId: game.nextEntityId++,
                     level: rng(5),
@@ -44,21 +45,28 @@ function playStateFactory(gameService: GameService, levelPopulator: LevelPopulat
                     ],
                     type: rng(4)
                 }
+                */
                 let tile: Tile = {
                     type: TILE_TYPE_SOLID,
-                    dice: {
-                        1: {
-                            dice: dice,
-                            face: rng(6)
-                        }
-                    }
+                    dice: {}
                 };
                 return tile;
             });
-            levelPopulator(rng, tiles, width, height, levelId);
+            let features: Feature[] = [
+                {
+                    type: FEATURE_TYPE_ENTRANCE,
+                    name: ''+levelId+'1'
+                },
+                {
+                    type: FEATURE_TYPE_EXIT,
+                    name: ''+(levelId+1)+'1'
+                }
+            ];
+
+            levelPopulator(game, rng, tiles, width, height, levelId, features);
 
             // add in a start point and an exit
-
+            /*
             let featureCount = 0;
             let attemptsRemaining = 99;
             o: while (1) {
@@ -89,6 +97,7 @@ function playStateFactory(gameService: GameService, levelPopulator: LevelPopulat
                     }
                 }
             }
+            */
 
 
             level = gameService.createLevel(game, width, height, tiles);
@@ -118,11 +127,17 @@ function playStateFactory(gameService: GameService, levelPopulator: LevelPopulat
             });
             viewer = tile.entity;
         }
+        console.log('level ' + levelId);
         for (let y = 0; y < level.height; y++) {
             let s = '' + y + ':';
             for (let x = 0; x < level.width; x++) {
                 let tile = level.tiles[x][y];
-                s += tile.type == TILE_TYPE_SOLID ? '#' : (tile.type == TILE_TYPE_FLOOR ? ' ' : tile.type.toString());
+                if (tile.name) {
+                    s += tile.name;
+                } else {
+                    s += tile.type == TILE_TYPE_SOLID ? '#' : (tile.type == TILE_TYPE_FLOOR ? '.' : tile.type.toString());
+                }
+
             }
             console.log(s);
         }

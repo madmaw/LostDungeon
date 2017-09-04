@@ -5,4 +5,7 @@ interface Entity {
     behaviorType: BehaviorType;
     lookingDown?: boolean;
     dice: Dice[];
+    //resources: Resource[];
+    diceSlots: number;
+    healthSlots: number;
 }

@@ -10,7 +10,7 @@
                 reference: 'reference.ts',
                 options: {
                     module: 'amd', //or commonjs
-                    target: 'es5', //or es3
+                    target: 'es6', //or es3
                     basePath: 'src/main/ts',
                     sourceMap: true,
                     declaration: false
@@ -44,7 +44,7 @@
                 reportFile: 'closure.txt',
                 options: {
                     compilation_level: 'ADVANCED_OPTIMIZATIONS',
-                    language_in: 'ECMASCRIPT5'
+                    language_in: 'ECMASCRIPT6'
                 }
             }
         },

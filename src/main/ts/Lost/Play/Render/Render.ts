@@ -1,6 +1,8 @@
 abstract class Render {
 
-    constructor(private localTransforms: Matrix4[]) {
+    public animating: boolean;
+
+    constructor(public localTransforms: Matrix4[]) {
 
     }
 

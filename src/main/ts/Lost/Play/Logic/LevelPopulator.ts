@@ -1,3 +1,11 @@
 interface LevelPopulator {
-    (rng: RandomNumberGenerator, tiles: Tile[][], width: number, height: number, depth: number): void;
+    (
+        game: Game,
+        rng: RandomNumberGenerator,
+        tiles: Tile[][],
+        width: number,
+        height: number,
+        depth: number,
+        features: Feature[]
+    ): void;
 }

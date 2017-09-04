@@ -8,7 +8,7 @@ interface WallColors {
 function createRandomWallColors(rng: RandomNumberGenerator): WallColors {
 
     let wallLower = createRandomColor(rng, 3, 12);
-    let d = 3 - Math.max(Math.abs(wallLower[1] - wallLower[0]), Math.abs(wallLower[2] - wallLower[0]), Math.abs(wallLower[2] - wallLower[1]));
+    let d = 3 - max(abs(wallLower[1] - wallLower[0]), abs(wallLower[2] - wallLower[0]), abs(wallLower[2] - wallLower[1]));
     let wallUpper = createRandomColor(rng, 6, 18 + rng(d));
     let floor = [];
     let grout = [];
@@ -22,8 +22,8 @@ function createRandomWallColors(rng: RandomNumberGenerator): WallColors {
     }
 
     for (let i = 0; i < 3; i++) {
-        floor.push(Math.ceil((wallUpper[i] + wallLower[i]) / 2 + up));
-        grout.push(Math.max(0, Math.min(wallUpper[i], wallLower[i]) - 3));
+        floor.push(ceil((wallUpper[i] + wallLower[i]) / 2 + up));
+        grout.push(max(0, min(wallUpper[i], wallLower[i]) - 3));
     }
 
     //let v = grout.splice(i, 1)[0];

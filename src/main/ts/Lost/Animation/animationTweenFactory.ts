@@ -1,16 +1,16 @@
 function animationTweenFactory(
     startTime: number,
     easing: Easing,
-    ...effects: Effect[]
+    effects: Effect[]
 ): Animation {
 
-    return function (time: number): number {
+    return function (time: number): boolean {
         let dtime = time - startTime;
         let progress = easing(dtime);
-        let done = 1;
+        let done: boolean;
         if (progress > 1) {
             progress = 1;
-            done = 0;
+            done = <any>1;
         }
         for (let effect of effects) {
             effect(progress);

@@ -1,3 +1,1 @@
-﻿function matrixCopy4(matrix: Matrix4) {
-    return matrix.slice();
-}
+let matrixCopy4 = copyArray;

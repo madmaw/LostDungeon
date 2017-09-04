@@ -1,9 +1,7 @@
 ///<reference path="Lost/StateTypeId.ts"/>
 // TODO we can remove this for Grunt build to save space
-let pi = Math.PI;
-let nil;
-window.onload = function () {
-    let levelPopulator = levelPopulatorTileMazeFactory(.1, 10);
+w.onload = function () {
+    let levelPopulator = levelPopulatorTileMazeFactory(.1, .4, 1, .5);
     let gameService: GameService = new LocalStorageGameService('l');
     let stateFactories: { [_: number]: StateFactory } = {};
     stateFactories[STATE_TYPE_HOME] = homeStateFactory(gameService);

@@ -4,4 +4,6 @@ type LevelDeltaData =
     LevelDeltaDataLook |
     LevelDeltaDataFall |
     LevelDeltaDataChangeState |
-    LevelDeltaDataDie;
+    LevelDeltaDataDie |
+    LevelDeltaDataCollectDice |
+    LevelDeltaDataPlayDice;

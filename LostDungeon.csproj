@@ -32,7 +32,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <TypeScriptTarget>ES5</TypeScriptTarget>
+    <TypeScriptTarget>ES6</TypeScriptTarget>
     <TypeScriptJSXEmit>None</TypeScriptJSXEmit>
     <TypeScriptCompileOnSaveEnabled>True</TypeScriptCompileOnSaveEnabled>
     <TypeScriptNoImplicitAny>False</TypeScriptNoImplicitAny>
@@ -90,18 +90,32 @@
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\Animation.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\animationCompositeFactory.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\animationChainedProxyFactory.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Animation\effectCopyMatrixIntoFactory.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Animation\valueFactoryMatrix4RotationFactory.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Domain\Dice.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Domain\DiceFace.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Domain\DiceId.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Domain\DiceSymbol.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Domain\DiceType.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Domain\EntityId.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Domain\TileSlot.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Matrix\matrixCopyInfo4.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Matrix\matrixRotate4.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Matrix\Vector3.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Matrix\vectorTransform3Matrix4.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\countSurroundingTiles.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\Feature.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\FeatureType.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\getBestAvailableTileSlot.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\InputDataCollectDice.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\InputDataPlayDice.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaDataChangeState.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaDataCollectDice.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaDataDie.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaDataFall.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\constants.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaDataPlayDice.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Util\arrayForEach.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Util\copyArray.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Util\create2DArray.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\delegatingStateFactory.ts" />
@@ -175,6 +189,8 @@
     <TypeScriptCompile Include="src\main\ts\Lost\Util\createRandomColor.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Util\createRepeatingBrickPattern.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Util\createRandomWallColors.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Util\mapForEach.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Util\normalizeAngle.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Util\RandomNumberGenerator.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Util\trigRandomNumberGeneratorFactory.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\WebGL\webglCanvasToTexture.ts" />

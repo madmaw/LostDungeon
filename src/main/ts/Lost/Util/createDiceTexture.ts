@@ -13,10 +13,15 @@ function createDiceTexture(width: number, height: number, textureCoordinates: nu
     for (let side = 0; side < 6; side++) {
         let symbols = dice.symbols[side];
         let textureCoordinateOffset = side * 8;
-        let x1 = width * textureCoordinates[textureCoordinateOffset];
-        let y1 = height * textureCoordinates[textureCoordinateOffset + 1];
-        let x2 = width * textureCoordinates[textureCoordinateOffset + 4];
-        let y2 = height * textureCoordinates[textureCoordinateOffset + 5];
+        let xa = width * textureCoordinates[textureCoordinateOffset];
+        let ya = height * textureCoordinates[textureCoordinateOffset + 1];
+        let xb = width * textureCoordinates[textureCoordinateOffset + 4];
+        let yb = height * textureCoordinates[textureCoordinateOffset + 5];
+
+        let x1 = min(xa, xb);
+        let y1 = min(ya, yb);
+        let x2 = max(xa, xb);
+        let y2 = max(ya, yb);
 
         let dw = x2 - x1;
         let dh = y2 - y1;

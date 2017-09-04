@@ -22,4 +22,4 @@ ORIENTATION_DIFFS_CORNERS.push(
     { x: 1, y: 1 }
 );
 
-var ORIENTATION_ANGLES: number[] = [0, Math.PI / 2, Math.PI, -Math.PI/2];
+var ORIENTATION_ANGLES: number[] = [0, -piOn2, pi, piOn2];

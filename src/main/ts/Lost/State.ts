@@ -14,7 +14,7 @@ class State<ElementType extends HTMLElement> {
         this.stateListener = stateListener;
         for (let name in eventListeners) {
             let eventListener = eventListeners[name];
-            window.addEventListener(name, eventListener, <any>{ passive: false });
+            w.addEventListener(name, eventListener, <any>{ passive: false });
         }
         this.eventListeners = eventListeners;
     }
@@ -31,7 +31,7 @@ class State<ElementType extends HTMLElement> {
         this.element.setAttribute('class', 'h');
         for (let name in this.eventListeners) {
             let eventListener = this.eventListeners[name];
-            window.removeEventListener(name, eventListener);
+            w.removeEventListener(name, eventListener);
         }
     }
 }

@@ -7,22 +7,70 @@
     display: none;
 }
 
+.t, #i, #c {
+    display: inline-block;
+}
+
+.t {
+    border: .5vw solid #fd0;
+    margin: .5vw;
+    width: 13vh;
+    height: 13vh;
+    overflow: hidden;
+}
+
 a {
    color: #ff4;
    text-decoration: none;
    text-shadow: #fff 0 0 8px;
 }
 
+#h, .t {
+    text-align: center;
+}
+
 h1 {
     padding: 5%;
 }
 
-#p {
-    height: 100%;
+#i, #c {
+    width: 100%;
+}
+
+#i {
+    margin-top: 1%;
+    height: 32%;
+    overflow: auto;
+    background-color: #445;
+}
+
+#c {
+    height: 67%;
 }
 
 #p, #h {
     width: 100%;
     min-height: 100%;
-    text-align: center;
+}
+
+@media (min-aspect-ratio: 4/3) {
+    #i, #c {
+        height: 100%;
+    }
+
+    #i {
+        margin: 0;
+        margin-left: 1%;
+        width: 24%;
+    }
+
+    #c {
+        width: 75%;
+    }
+
+    .t {
+        width: 10vw;
+        height: 10vw;
+    }
+
 }

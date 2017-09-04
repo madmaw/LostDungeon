@@ -49,13 +49,13 @@ function createRepeatingBrickPattern(
             ctx.beginPath();
             ctx.moveTo(x + brickRounding, y);
             ctx.lineTo(x + brickWidth - brickRounding, y);
-            ctx.arc(x + brickWidth - brickRounding, y + brickRounding, brickRounding, -pi / 2, 0);
+            ctx.arc(x + brickWidth - brickRounding, y + brickRounding, brickRounding, -piOn2, 0);
             ctx.lineTo(x + brickWidth, y + brickHeight - brickRounding);
-            ctx.arc(x + brickWidth - brickRounding, y + brickHeight - brickRounding, brickRounding, 0, pi / 2);
+            ctx.arc(x + brickWidth - brickRounding, y + brickHeight - brickRounding, brickRounding, 0, piOn2);
             ctx.lineTo(x + brickRounding, y + brickHeight);
-            ctx.arc(x + brickRounding, y + brickHeight - brickRounding, brickRounding, pi / 2, pi);
+            ctx.arc(x + brickRounding, y + brickHeight - brickRounding, brickRounding, piOn2, pi);
             ctx.lineTo(x, y + brickRounding);
-            ctx.arc(x + brickRounding, y + brickRounding, brickRounding, -pi, -pi / 2);
+            ctx.arc(x + brickRounding, y + brickRounding, brickRounding, -pi, -piOn2);
             ctx.closePath();
             ctx.fill();
 
