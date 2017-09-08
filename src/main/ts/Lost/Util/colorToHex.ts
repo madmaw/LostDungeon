@@ -1,8 +1,8 @@
 function colorToHex(a: number[]) {
     let hex = '#';
-    for (let v of a) {
+    arrayForEach(a, function (v: number) {
         let h = v.toString(16);
         hex += h;
-    }
+    });
     return hex;
 }

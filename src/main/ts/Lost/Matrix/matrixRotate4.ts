@@ -1,14 +1,18 @@
-function matrixRotate4(x: number, y: number, z: number, rad: number, out?: Matrix4): Matrix4 {
-    if (!out) {
-        out = matrixIdentity4();
-    }
+function matrixRotate4(x: number, y: number, z: number, rad: number): Matrix4 {
     let s, c, t;
 
     s = sin(rad);
     c = cos(rad);
     t = 1 - c;
+    return [
+        x * x * t + c, y * x * t - z * s, z * x * t - y * s, 0, 
+        x * y * t + z * s, y * y * t + c, z * y * t - x * s, 0,
+        x * z * t + y * s, y * z * t + x * s, z * z * t + c, 0,
+        0, 0, 0, 1
+    ];
 
     // Perform rotation-specific matrix multiplication
+    /*
     out[0] = x * x * t + c;
     out[1] = y * x * t - z * s;
     out[2] = z * x * t - y * s;
@@ -26,4 +30,5 @@ function matrixRotate4(x: number, y: number, z: number, rad: number, out?: Matri
     out[14] = 0;
     out[15] = 1;
     return out;
+    */
 }

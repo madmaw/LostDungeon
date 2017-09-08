@@ -1,27 +1,24 @@
-abstract class Render {
 
-    public animating: boolean;
 
-    constructor(public localTransforms: Matrix4[]) {
+interface Render {
 
-    }
+    animating?: boolean;
+    localTransforms: Matrix4[];
 
-    update(t: number): void {
+    update?: (t: number) => void;
 
-    }
+    consume?: (t: number, delta: LevelDelta) => Animation;
 
-    consume(t: number, delta: LevelDelta): Animation {
-        return null;
-    }
+    draw(gl: WebGLRenderingContext, transformStack: Matrix4[], pickTextures: boolean): void;
 
-    draw(gl: WebGLRenderingContext, transformStack: Matrix4[], pickTextures:boolean): void {
-        for (let localTransform of this.localTransforms) {
-            transformStack.push(localTransform);
-        }
-        this.doDraw(gl, transformStack, pickTextures);
-        let length = this.localTransforms.length;
-        transformStack.splice(transformStack.length - length, length);
-    }
+    doDraw(gl: WebGLRenderingContext, transformStack: Matrix4[], pickTextures: boolean): void;
+}
 
-    abstract doDraw(gl: WebGLRenderingContext, transformStack: Matrix4[], pickTextures: boolean): void;
+function renderDefaultDraw(gl: WebGLRenderingContext, transformStack: Matrix4[], pickTextures: boolean) {
+    let render: Render = this;
+    arrayPushAll(transformStack, render.localTransforms);
+    render.doDraw(gl, transformStack, pickTextures);
+    let length = render.localTransforms.length;
+    transformStack.splice(transformStack.length - length, length);
+
 }

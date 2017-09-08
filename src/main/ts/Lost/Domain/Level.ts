@@ -1,7 +1,7 @@
 interface Level {
     gameId: GameId;
     levelId: LevelId;
-    width: number;
-    height: number;
+    levelWidth: number;
+    levelHeight: number;
     tiles: Tile[][];
 }

@@ -19,9 +19,7 @@ function createRepeatingBrickPattern(
     let brickOffset = brickOffsetFraction * brickWidth;
     let initialBrickOffset = initialBrickOffsetFraction * brickWidth + groutWidth/2;
 
-    let canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
+    let canvas = createCanvas(width, height);
     let ctx = canvas.getContext('2d');
 
     let brickColor = ctx.createLinearGradient(0, 0, 0, height);
@@ -30,7 +28,6 @@ function createRepeatingBrickPattern(
 
     ctx.fillStyle = groutColor;
     ctx.fillRect(0, 0, width, height);
-    ctx.fillStyle = brickColor;
 
     ctx.strokeStyle = groutColor;
 
@@ -40,11 +37,12 @@ function createRepeatingBrickPattern(
     while (y < height) {
         let x = xoffset - brickWidth - groutWidth;
         while (x < width) {
+            ctx.fillStyle = brickColor;
             //ctx.fillRect(x, y, brickWidth, brickHeight);
-            let whole = x >= 0 && x < width - brickWidth;
+            let whole = x >= 0 && x <= width - brickWidth;
             if (whole) {
                 let r = rng();
-                ctx.globalAlpha = (1 - r * r * r * r * 0.3);
+                ctx.globalAlpha = (1 - r * r * r * r * .3);
             }
             ctx.beginPath();
             ctx.moveTo(x + brickRounding, y);
@@ -58,20 +56,22 @@ function createRepeatingBrickPattern(
             ctx.arc(x + brickRounding, y + brickRounding, brickRounding, -pi, -piOn2);
             ctx.closePath();
             ctx.fill();
-
-            ctx.globalAlpha = 0.3;
-            ctx.lineWidth = groutWidth * 2;
-            ctx.stroke();
-            ctx.globalAlpha = 1;
+            if (groutWidth) {
+                ctx.globalAlpha = .3;
+                ctx.lineWidth = groutWidth * 2;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
 
             if (text && whole) {
-                let c = text[count++%text.length];
+                let c = text[count++ % text.length];
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top'
                 ctx.font = '' + brickHeight + 'px serif';
                 let fontSize = brickHeight;
-                ctx.lineWidth = groutWidth / 2;
-                ctx.strokeText(c, x + brickWidth / 2, y);
+                //ctx.lineWidth = groutWidth / 2;
+                ctx.fillStyle = groutColor;
+                ctx.fillText(c, x + brickWidth / 2, y);
             }
 
             x += brickWidth + groutWidth;

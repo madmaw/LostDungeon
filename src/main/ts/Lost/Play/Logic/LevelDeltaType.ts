@@ -11,3 +11,5 @@ let LEVEL_DELTA_TYPE_DIE: LevelDeltaType = 8;
 let LEVEL_DELTA_TYPE_DROP_IN: LevelDeltaType = 9;
 let LEVEL_DELTA_TYPE_COLLECT_DICE: LevelDeltaType = 10;
 let LEVEL_DELTA_TYPE_PLAY_DICE: LevelDeltaType = 11;
+let LEVEL_DELTA_TYPE_RESOURCE_CHANGE: LevelDeltaType = 12;
+let LEVEL_DELTA_TYPE_HEALTH_CHANGE: LevelDeltaType = 13;

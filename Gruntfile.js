@@ -10,7 +10,7 @@
                 reference: 'reference.ts',
                 options: {
                     module: 'amd', //or commonjs
-                    target: 'es6', //or es3
+                    target: 'es5', //or es3
                     basePath: 'src/main/ts',
                     sourceMap: true,
                     declaration: false
@@ -44,7 +44,9 @@
                 reportFile: 'closure.txt',
                 options: {
                     compilation_level: 'ADVANCED_OPTIMIZATIONS',
-                    language_in: 'ECMASCRIPT6'
+                    language_in: 'ECMASCRIPT5',
+                    // ES6 output is not supported!!
+                    language_out: 'ECMASCRIPT5'
                 }
             }
         },
@@ -99,6 +101,9 @@
                 }, {
                     from: /\s*\n\s*/g,
                     to: ""
+                }, {
+                    from: /(=|:|return |\(|,)function\(([^\)]*)\)/g, 
+                    to:"$1($2)=>"
                 }]
             },
             dist: {

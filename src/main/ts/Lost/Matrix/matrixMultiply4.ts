@@ -1,18 +1,18 @@
-﻿function matrixMultiply4(a: Matrix4, b: Matrix4, out?: Matrix4): Matrix4 {
+function matrixMultiply4(a: Matrix4, b: Matrix4, out?: Matrix4): Matrix4 {
     if (!out) {
-        out = new Array(16);
+        out = matrixIdentity4();
     }
+    // slower, but smaller
+    countForEach(16, function (x: number) {
+        let i = x >> 2;
+        let j = x % 4;
+        let v = 0;
+        countForEach(4, function (k: number) {
+            v += a[i + k * 4] * b[k + j * 4];
+        })
+        out[i + j * 4] = v;
+    })
     /*
-    for (let i = 0; i < 4; i++) {
-        for (let j = 0; j < 4; j++) {
-            let v = 0;
-            for (let k = 0; k < 4; k++) {
-                v += a[i + k * 4] * b[k + j * 4];
-            }
-            out[i + j * 4] = v;
-        }
-    }
-    */
     let a00 = a[0], a01 = a[1], a02 = a[2], a03 = a[3];
     let a10 = a[4], a11 = a[5], a12 = a[6], a13 = a[7];
     let a20 = a[8], a21 = a[9], a22 = a[10], a23 = a[11];
@@ -42,6 +42,7 @@
     out[13] = b0 * a01 + b1 * a11 + b2 * a21 + b3 * a31;
     out[14] = b0 * a02 + b1 * a12 + b2 * a22 + b3 * a32;
     out[15] = b0 * a03 + b1 * a13 + b2 * a23 + b3 * a33;
+    */
 
     return out;
 }

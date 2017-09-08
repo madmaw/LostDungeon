@@ -12,8 +12,8 @@ let TILE_SLOT_COUNT = dimension * dimension;
 
 let c = .5 / dimension - .5;
 let piOn6 = pi / 6;
-for (let x = 0; x < dimension; x++) {
-    for (let y = 0; y < dimension; y++) {
+countForEach(dimension, function (x: number) {
+    countForEach(dimension, function (y: number) {
         let tileSlotBag: { [_: string]: TileSlot };
         if (x && y && x < dimension - 1 && y < dimension - 1) {
             tileSlotBag = TILE_SLOTS_DEFENSIVE;
@@ -28,7 +28,7 @@ for (let x = 0; x < dimension; x++) {
         };
         tileSlotBag[index] = tileSlot;
         TILE_SLOTS_ALL[index] = tileSlot;
-    }
-}
+    });
+});
 
 

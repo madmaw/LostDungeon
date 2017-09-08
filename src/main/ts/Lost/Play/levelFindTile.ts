@@ -1,18 +1,18 @@
 interface AbridgedLevel {
     tiles: Tile[][];
-    width: number;
-    height: number;
+    levelWidth: number;
+    levelHeight: number;
 }
 
 function levelFindTile(level: AbridgedLevel, searchFunction: (tile: Tile, x?: number, y?: number) => boolean | void): Tile {
-    for (let x = 0; x < level.width; x++) {
+    let total = level.levelWidth * level.levelHeight;
+    for (let i= 0; i < total; i++) {
+        let x = i % level.levelWidth;
+        let y = floor(i / level.levelWidth);
         let column = level.tiles[x];
-        for (let y = 0; y < level.height; y++) {
-            let tile = column[y];
-            if (searchFunction(tile, x, y)) {
-                return tile;
-            }
+        let tile = column[y];
+        if (searchFunction(tile, x, y)) {
+            return tile;
         }
     }
-    return nil;
 }

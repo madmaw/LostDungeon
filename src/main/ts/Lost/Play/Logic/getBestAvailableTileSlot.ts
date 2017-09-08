@@ -1,7 +1,7 @@
 function getBestAvailableTileSlotKey(tileSlots: { [_: number]: TileSlot }, tile: Tile, targetDiffX: number, targetDiffY: number): string {
     let targetSlot: TileSlot;
     let targetSlotKey: string;
-    mapForEach(tileSlots, (key: string, slot: TileSlot) => {
+    mapForEach(tileSlots, function(key: string, slot: TileSlot) {
         if (!tile.dice[key]) {
             let ok = !targetSlot;
             if (!ok) {

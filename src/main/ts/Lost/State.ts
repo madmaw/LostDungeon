@@ -1,37 +1,35 @@
-class State<ElementType extends HTMLElement> {
+interface State {
 
-    protected element: ElementType;
-    protected stateListener: StateListener;
-    private eventListeners: { [_: string]: EventListenerOrEventListenerObject };
+    elementId: string;
+    element?: HTMLElement;
+    stateListener?: StateListener;
+    eventListeners?: { [_: string]: EventListenerOrEventListenerObject };
 
-    constructor(private elementId: string) {
+    init(stateListener: StateListener): void;
 
-    }
+    start();
 
-    init(stateListener: StateListener, eventListeners?: { [_: string]: EventListenerOrEventListenerObject }): void {
-        this.element = <ElementType>document.getElementById(this.elementId);
-        this.element.removeAttribute('class');
-        this.stateListener = stateListener;
-        for (let name in eventListeners) {
-            let eventListener = eventListeners[name];
-            w.addEventListener(name, eventListener, <any>{ passive: false });
-        }
-        this.eventListeners = eventListeners;
-    }
+    stop();
 
-    start(): void {
+    destroy();
 
-    }
-
-    stop(): void {
-        
-    }
-
-    destroy(): void {
-        this.element.setAttribute('class', 'h');
-        for (let name in this.eventListeners) {
-            let eventListener = this.eventListeners[name];
-            w.removeEventListener(name, eventListener);
-        }
-    }
 }
+
+function stateDefaultInit(state: State, stateListener: StateListener, eventListeners?: { [_: string]: EventListenerOrEventListenerObject }): void {
+    state.element = getElementById(state.elementId);
+    state.element.removeAttribute('class');
+    state.stateListener = stateListener;
+    mapForEach(eventListeners, function (name: string, eventListener: EventListenerOrEventListenerObject) {
+        w.addEventListener(name, eventListener, <any>{ passive: false });
+    });
+    state.eventListeners = eventListeners;
+}
+
+function stateDefaultDestroy() {
+    let state: State = this;
+    state.element.setAttribute('class', 'h');
+    mapForEach(state.eventListeners, function (name: string, eventListener: EventListenerOrEventListenerObject) {
+        w.removeEventListener(name, eventListener);
+    });
+}
+

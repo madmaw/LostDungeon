@@ -1,9 +1,7 @@
 function createPickTexture(id: number): HTMLCanvasElement {
-    let canvas = document.createElement('canvas');
     let width = 32;
     let height = 32;
-    canvas.width = width;
-    canvas.height = height;
+    let canvas = createCanvas(width, height);
     let ctx = canvas.getContext('2d');
 
     let color = id.toString(16);

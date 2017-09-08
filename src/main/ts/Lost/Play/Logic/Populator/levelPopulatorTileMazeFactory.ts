@@ -5,8 +5,13 @@ interface PointAndDirections {
     preferredIndex?: number;
 }
 
+interface DiceSymbolAndCost {
+    symbol: DiceSymbol;
+    cost: number;
+}
+
 function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, doorChance: number, deadendChance: number): LevelPopulator {
-    return function (game: Game, rng: RandomNumberGenerator, tiles: Tile[][], width: number, height: number, depth: number, features: Feature[]) {
+    return (game: Game, rng: RandomNumberGenerator, tiles: Tile[][], width: number, height: number, depth: number, features: Feature[]) => {
 
         function countFloors(x: number, y: number, decrementDoors?: number) {
             return countSurroundingTiles(tiles, width, height, x, y, function (tile: Tile) {
@@ -18,14 +23,82 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
                     1 : 0;
             });
         }
+
+        function getRandomSymbol(maxValue: number, diceHint: number, diceType: DiceType, persistence: number): DiceSymbolAndCost {
+            let categories = DICE_TYPE_HINT_SYMBOL_COSTS[diceType];
+            let costs = categories[diceHint%categories.length];
+            let indices: number[] = [];
+            arrayForEach(costs, function (v: number, i: number) {
+                if (v != nil) {
+                    indices.push(i);
+                }
+            });
+            while (persistence) { 
+                let index = rng(indices.length);
+                let symbol = indices[index];
+                let cost = costs[symbol];
+                if (cost <= maxValue) {
+                    return {
+                        symbol: symbol,
+                        cost: cost
+                    };
+                }
+                persistence--;
+            }
+        }
+
+        function createRandomDice(maxValueCount: number, maxSideValueCount: number, diceHint: number, diceType: DiceType, ownerId?: number): Dice {
+
+            let level = max(0, floor(sqrt(maxValueCount)) - 1);
+            if (!level) {
+                diceType = DICE_TYPE_NEUTRAL;
+            }
+            let symbols: DiceSymbol[][] = [];
+            let empty: boolean = <any>1;
+            countForEach(3, function (i: number) {
+                let faceSymbols = [];
+                let sideValueCount: number;
+                if (i == 2) {
+                    sideValueCount = maxValueCount;
+                } else {
+                    sideValueCount = rng(maxValueCount);
+                }
+                sideValueCount = min(maxSideValueCount, sideValueCount);
+                maxValueCount -= sideValueCount;
+
+                while (faceSymbols.length < 4 && sideValueCount > 0) {
+                    let symbolAndCost = getRandomSymbol(sideValueCount, diceHint, diceType, ceil(sideValueCount));
+                    empty = empty && !symbolAndCost;
+                    if (symbolAndCost) {
+                        sideValueCount -= symbolAndCost.cost;
+                        faceSymbols.push(symbolAndCost.symbol);
+                    } else {
+                        break;
+                    }
+                }
+                symbols.push(faceSymbols, faceSymbols);
+            })
+
+            if (!empty) {
+                let dice: Dice = {
+                    diceId: game.nextEntityId++,
+                    level: level,
+                    owner: ownerId,
+                    symbols: symbols,
+                    type: diceType
+                }
+                return dice;
+            }
+        }
+
         let doorCounts: { [_: string]: number } = {};
         let wallCount = width * height;
         let roomCount = rng(roomChance * wallCount);
         let buffer = 3;
-        let level = {
+        let level: AbridgedLevel = {
             tiles: tiles,
-            width: width,
-            height: height
+            levelWidth: width,
+            levelHeight: height
         };
         while (roomCount > 0) {
             // make sure we pad rooms three (two walls and a corridor) on each side so we can always fit corridors down the side, so everything connects...
@@ -100,23 +173,24 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
 
         // find all the deadends
         let deadends: Point[] = [];
+        let floorTiles: Point[] = [];
         levelFindTile(
             level,
             function (tile: Tile, x: number, y: number) {
+                let p = { x: x, y: y };
                 if (countFloors(x, y) == 1) {
-                    deadends.push({ x: x, y: y });
+                    deadends.push(p);
+                }
+                if (tile.type == TILE_TYPE_FLOOR) {
+                    floorTiles.push(p);
                 }
             }
         );
         // randomize the deadends
-        for (let i in deadends) {
-            let x = rng(deadends.length);
-            let tmp = deadends[x];
-            deadends[x] = deadends[i];
-            deadends[i] = tmp;
-        }
+        randomizeArray(rng, deadends);
+        randomizeArray(rng, floorTiles);
         // handle any features
-        for (var feature of features) {
+        arrayForEach(features, function (feature: Feature) {
             switch (feature.type) {
                 case FEATURE_TYPE_ENTRANCE:
                     let point: Point;
@@ -141,14 +215,13 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
                     exitTile.name = feature.name;
                     break;
             }
-        }
-        for (let i = deadends.length; i > 0;) {
-            i--;
-            let deadend = deadends[i];
+        });
+        arrayForEachReverse(deadends, function (deadend: Point) {
+            let remove: boolean;
             // still a deadend?
             if (countFloors(deadend.x, deadend.y) == 1 && rng() > deadendChance) {
                 // remove the deadend
-                for (let diff of ORIENTATION_DIFFS) {
+                arrayForEach(ORIENTATION_DIFFS, function (diff: Point) {
                     let fromx = deadend.x + diff.x;
                     let fromy = deadend.y + diff.y;
                     let tox = deadend.x - diff.x;
@@ -158,45 +231,94 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
                         let from = tiles[fromx][fromy];
                         if (to.type == TILE_TYPE_SOLID && from.type == TILE_TYPE_FLOOR) {
                             to.type = TILE_TYPE_FLOOR;
-                            deadends.splice(i, 1);
+                            remove = <any>1;
                         }
                     }
-                }
+                });
             }
-        }
-        // add in some treasures
-        let treasurePileCount = depth;
-        for (let deadend of deadends) {
-            let tile = tiles[deadend.x][deadend.y];
-            let treasures = 1;
-            while (treasures > 0) {
-                let symbols: DiceSymbol[][] = [];
-                let level = 0;
-                for (let side = 0; side < 6; side++) {
-                    let sideSymbols: DiceSymbol[] = [];
-                    let sideSymbolCount = rng(5);
-                    if (sideSymbolCount == 4) {
-                        level++;
+            return remove;
+        })
+
+        let attackType: DiceType = rng(4);
+        let defendType: DiceType = rng(4);
+
+        // add in some monsters
+        let monsterCount = max(0, depth - 2);
+        monsterCount += rng(monsterCount);
+        arrayForEachReverse(floorTiles, function (floorTile: Point) {
+            if (monsterCount) {
+                let tile = tiles[floorTile.x][floorTile.y];
+
+                let entityLevel = rng(depth) + 1;
+                let healthSlots = max(1, rng(sqrt(entityLevel >> 1)));
+                let diceSlots = entityLevel - rng(entityLevel >> 1) + 1;
+
+                let diceCount = diceSlots - rng(diceSlots >> 1);
+
+                let dice: Dice[] = [];
+                let entityId = game.nextEntityId++;
+                let entityType = rng(4);
+                while (diceCount) {
+                    diceCount--;
+                    let newDice = createRandomDice(rng(diceCount)+1, entityLevel, diceCount, entityType, entityId);
+                    if (newDice) {
+                        dice.push(newDice);
                     }
-                    while (sideSymbolCount > 0) {
-                        sideSymbolCount--;
-                        sideSymbols.push(rng(DICE_SYMBOL_COUNT));
-                    }
-                    symbols.push(sideSymbols);
                 }
-                let dice: Dice = {
-                    diceId: game.nextEntityId++,
-                    level: level,
-                    symbols: symbols,
-                    type: rng(4)
-                };
-                let slot = getBestAvailableTileSlotKey(TILE_SLOTS_ALL, tile, 0, 0);
-                tile.dice[slot] = {
+
+                let entity: Entity = {
+                    behaviorType: BEHAVIOR_TYPE_MONSTER,
                     dice: dice,
-                    face: rng(6)
+                    diceSlots: diceSlots,
+                    resourceCounts: {},
+                    entityOrientation: rng(4),
+                    healthSlots: healthSlots,
+                    id: entityId
+                }
+
+                tile.entity = entity;
+                monsterCount--;
+            }
+            return <any>monsterCount;
+        });
+
+        // add in some treasures
+        let treasurePileCount = sqrt(depth) + 3;
+        let diceHint = 0;
+        // do the deadends first, but use floor tiles if we run out
+        deadends.push.apply(deadends, floorTiles);
+        arrayForEach(deadends, function (deadend: Point) {
+            let tile = tiles[deadend.x][deadend.y];
+            let treasures = min(treasurePileCount, max(rng() * rng() * rng(depth+1), 1));
+            while (treasures > 0) {
+                let diceType: DiceType;
+                let maxValueCount;
+                let maxSideValueCount;
+                if (depth < 3) {
+                    // ensure an even spread early on
+                    diceType = DICE_TYPE_NEUTRAL;
+                    maxValueCount = 3;
+                    maxSideValueCount = 1;
+                } else {
+                    diceHint = rng(99);
+                    diceType = rng(4);
+                    let maxLevel = rng(depth);
+                    maxValueCount = 2 + rng(sqrt(maxLevel) + 2) + sqrt(maxLevel * 2);
+                    maxSideValueCount = 1 + maxLevel;
+                }
+                let dice = createRandomDice(maxValueCount, maxSideValueCount, diceHint, diceType);
+                diceHint++;
+                if (dice) {
+                    let slot = getBestAvailableTileSlotKey(TILE_SLOTS_ALL, tile, 0, 0);
+                    tile.dice[slot] = {
+                        dice: dice,
+                        face: rng(6)
+                    }
                 }
                 treasures--;
             }
-        }
+            treasurePileCount--;
+
+        });
     }
 }

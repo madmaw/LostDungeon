@@ -9,7 +9,7 @@ function countSurroundingTiles(
 ): number {
     let count = 0;
     let diffs = includeCorners ? ORIENTATION_DIFFS_CORNERS : ORIENTATION_DIFFS;
-    for (let diff of diffs) {
+    arrayForEach(diffs, function (diff: Point) {
         let x = tx + diff.x;
         let y = ty + diff.y;
         if (x >= 0 && x < width && y >= 0 && y < height) {
@@ -18,6 +18,6 @@ function countSurroundingTiles(
                 count += result;
             }
         }
-    }
+    });
     return count;
 }

@@ -1,7 +1,5 @@
 function createDiceTexture(width: number, height: number, textureCoordinates: number[], dice: Dice): HTMLCanvasElement {
-    let canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
+    let canvas = createCanvas(width, height);
     let ctx = canvas.getContext('2d');
 
     let backgroundColor = DICE_TYPE_COLORS[dice.type];
@@ -41,15 +39,14 @@ function createDiceTexture(width: number, height: number, textureCoordinates: nu
             let cy = 0;
             ctx.font = '' + (cellSize *.9) + 'px serif';
 
-            for (let i in symbols) {
-                let symbol = symbols[i];
+            arrayForEach(symbols, function (symbol: DiceSymbol, i: number) {
                 let character = DICE_SYMBOL_CHARACTERS[symbol];
                 let color = DICE_SYMBOL_COLORS[symbol];
                 let angleOffset = DICE_SYMBOL_ROTATION[symbol];
                 if (!color) {
                     color = backgroundColor;
                 }
-                
+
                 //let angle = (pi * 2 * <any>i) / (span * span) - pi/4 + pi;
                 let tx = cx + cellSize / 2;
                 let ty = cy + cellSize / 2;
@@ -64,11 +61,12 @@ function createDiceTexture(width: number, height: number, textureCoordinates: nu
                 ctx.restore();
 
                 cx += cellSize;
-                if ((<any>i % span) == span - 1) {
+                if ((i % span) == span - 1) {
                     cx = 0;
                     cy += cellSize;
                 }
-            }
+
+            });
         }
         if (dice.level) {
             let levelFontSize = dh / 3;
