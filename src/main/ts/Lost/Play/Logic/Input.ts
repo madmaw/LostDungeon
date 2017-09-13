@@ -1,4 +1,4 @@
 interface Input {
-    inputType: InputType,
+    inputTypeId: InputType,
     inputData?: InputData
 }

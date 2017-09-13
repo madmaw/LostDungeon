@@ -667,7 +667,7 @@ function createLevelUpdater(game: Game, level: Level): LevelUpdater {
                         waitingOnInput = inputQueue.length == 0;
                         if (!waitingOnInput) {
                             let input = arraySplice(inputQueue, 0, 1)[0];
-                            switch (input.inputType) {
+                            switch (input.inputTypeId) {
                                 case INPUT_TYPE_LOOK_DOWN:
                                     action = look(entity, <any>1);
                                     break;

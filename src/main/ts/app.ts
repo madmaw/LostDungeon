@@ -10,7 +10,7 @@ w.onload = function() {
     if (FEATURE_SOUND) {
         if (w["AudioContext"]) {
             audioContext = new AudioContext();
-        } else if (w["webkitAudioContext"]) {
+        } else if (FEATURE_SOUND_LEGACY_WEB_AUDIO && w["webkitAudioContext"]) {
             audioContext = new w["webkitAudioContext"]();
         }
     }

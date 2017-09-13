@@ -58,7 +58,7 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
             let features: TileDefinition[] = [];
 
             let numEntrances = max(1, floor(sqrt(levelId/2)));
-            let numExits = max(1, floor(sqrt(1 + levelId / 2)));
+            let numExits = floor(sqrt(1 + levelId / 2));
 
             if (levelId == 13) {
                 // last level
@@ -85,7 +85,7 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
             } else {
                 // ensure there aren't too many health ones
                 let featureType: FeatureType;
-                if (data.playerTransition.entity.healthSlots < floor(sqrt(levelId))) {
+                if (data.playerTransition.entity.healthSlots < floor(levelId/4 + 1)) {
                     featureType = FEATURE_TYPE_BONUS_HEALTH;
                 } else {
                     featureType = FEATURE_TYPE_BONUS_DICE_SLOT;
@@ -117,7 +117,7 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                         <TileDefinition>{
                             tileType: TILE_TYPE_ROOFLESS,
                             tileName: '' + levelId + '' + count,
-                            scribbles: levelId==1?['find', 'a', 'way', 'out']:0
+                            scribbles: levelId==1?['find', 'a', 'way', 'out']:nil
                         }
                     );
                 }
@@ -289,7 +289,7 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                             result = diceAndFace.dice.diceId == id;
                             if (result) {
                                 queueInput({
-                                    inputType: INPUT_TYPE_COLLECT_DICE,
+                                    inputTypeId: INPUT_TYPE_COLLECT_DICE,
                                     inputData: {
                                         diceId: id,
                                         tileX: x,
@@ -303,14 +303,14 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                     }
                     let entity = tile.entity;
                     let input: Input = {
-                        inputType: INPUT_TYPE_NONE
+                        inputTypeId: INPUT_TYPE_NONE
                     };
                     if (entity == viewer) {
                         for (let dice of entity.dice) {
                             let result = dice && dice.diceId == id;
                             if (result) {
                                 input = {
-                                    inputType: INPUT_TYPE_PLAY_DICE,
+                                    inputTypeId: INPUT_TYPE_PLAY_DICE,
                                     inputData: {
                                         diceId: id,
                                         owner: entity
@@ -749,7 +749,7 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                             owner: entity
                         };
                         queueInput({
-                            inputType: INPUT_TYPE_PLAY_DICE,
+                            inputTypeId: INPUT_TYPE_PLAY_DICE,
                             inputData: data
                         });
                     };
@@ -892,7 +892,7 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                                 break;
                         }
                         queueInput({
-                            inputType: type,
+                            inputTypeId: type,
                             inputData: data
                         });
                     },
@@ -950,7 +950,7 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                                         }
                                     }
                                     queueInput({
-                                        inputType: type,
+                                        inputTypeId: type,
                                         inputData: data
                                     });
                                 }
