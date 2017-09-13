@@ -1,3 +1,9 @@
+interface EntityPersonality {
+    playDiceSymbolWeights: number[];
+    collectDiceSymbolWeights: number[];
+    randomness: number;
+}
+
 interface Entity {
     id: EntityId;
     entityOrientation: Orientation;
@@ -9,4 +15,6 @@ interface Entity {
     diceSlots: number;
     healthSlots: number;
     dead?: boolean;
+    personality?: EntityPersonality;
+    entityType: EntityType;
 }

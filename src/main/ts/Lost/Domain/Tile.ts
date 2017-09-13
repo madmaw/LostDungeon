@@ -1,11 +1,13 @@
 interface DiceAndFace {
     dice: Dice;
-    face: DiceFace;
+    upturnedFace: DiceFace;
 }
 
 interface Tile {
-    type: TileType;
+    tileType: TileType;
     entity?: Entity;
-    name?: string;
+    tileName?: string;
+    scribbles?: string[];
+    featureType?: FeatureType;
     dice: { [_: string]: DiceAndFace };
 }

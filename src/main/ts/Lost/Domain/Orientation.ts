@@ -15,11 +15,13 @@ var ORIENTATION_DIFFS: Point[] = [
     { x: -1, y: 0 }
 ];
 var ORIENTATION_DIFFS_CORNERS: Point[] = copyArray(ORIENTATION_DIFFS);
-ORIENTATION_DIFFS_CORNERS.push(
-    { x: -1, y: -1 },
-    { x: 1, y: -1 },
-    { x: -1, y: 1 },
-    { x: 1, y: 1 }
+arrayPushAll(ORIENTATION_DIFFS_CORNERS,
+    [
+        { x: -1, y: -1 },
+        { x: 1, y: -1 },
+        { x: -1, y: 1 },
+        { x: 1, y: 1 }
+    ]
 );
 
 var ORIENTATION_ANGLES: number[] = [0, -piOn2, pi, piOn2];

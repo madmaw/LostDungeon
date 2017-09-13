@@ -22,8 +22,8 @@ function createRandomWallColors(rng: RandomNumberGenerator): WallColors {
     }
 
     for (let i = 0; i < 3; i++) {
-        floor.push(ceil((wallUpper[i] + wallLower[i]) / 2 + up));
-        grout.push(max(0, min(wallUpper[i], wallLower[i]) - 3));
+        arrayPush(floor, ceil((wallUpper[i] + wallLower[i]) / 2 + up));
+        arrayPush(grout, max(0, min(wallUpper[i], wallLower[i]) - 3));
     }
 
     //let v = grout.splice(i, 1)[0];

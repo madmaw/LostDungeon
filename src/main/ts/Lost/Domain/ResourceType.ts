@@ -9,3 +9,15 @@ let RESOURCE_TYPE_ALL = [
     RESOURCE_TYPE_WATER,
     RESOURCE_TYPE_LIFE
 ];
+
+
+function zeroResourceMap(): { [_: number]: number } {
+    return {
+        // fire
+        1: 0,
+        // water
+        2: 0,
+        // life
+        3: 0
+    };
+}

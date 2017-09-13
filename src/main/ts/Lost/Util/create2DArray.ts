@@ -3,9 +3,9 @@ function create2DArray<A>(width: number, height: number, fillFunction: (x?: numb
     for (let x = 0; x < width; x++) {
         let column: A[] = [];
         for (let y = 0; y < height; y++) {
-            column.push(fillFunction(x, y, array));
+            arrayPush(column, fillFunction(x, y, array));
         }
-        array.push(column);
+        arrayPush(array, column);
     }
     return array;
 }

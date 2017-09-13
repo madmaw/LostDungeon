@@ -5,8 +5,8 @@ function createRandomColor(rng: RandomNumberGenerator, min: number, total: numbe
     let a = [x, y, z];
     let i = rng(3);
     let v = a[i];
-    a.splice(i, 1);
-    a.push(v);
+    arraySplice(a, i, 1);
+    arrayPush(a, v);
 
     return a;
 }

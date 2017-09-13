@@ -45,16 +45,20 @@ function createRepeatingBrickPattern(
                 ctx.globalAlpha = (1 - r * r * r * r * .3);
             }
             ctx.beginPath();
-            ctx.moveTo(x + brickRounding, y);
-            ctx.lineTo(x + brickWidth - brickRounding, y);
-            ctx.arc(x + brickWidth - brickRounding, y + brickRounding, brickRounding, -piOn2, 0);
-            ctx.lineTo(x + brickWidth, y + brickHeight - brickRounding);
-            ctx.arc(x + brickWidth - brickRounding, y + brickHeight - brickRounding, brickRounding, 0, piOn2);
-            ctx.lineTo(x + brickRounding, y + brickHeight);
-            ctx.arc(x + brickRounding, y + brickHeight - brickRounding, brickRounding, piOn2, pi);
-            ctx.lineTo(x, y + brickRounding);
-            ctx.arc(x + brickRounding, y + brickRounding, brickRounding, -pi, -piOn2);
-            ctx.closePath();
+            if (FEATURE_ROUNDED_BRICKS) {
+                ctx.moveTo(x + brickRounding, y);
+                ctx.lineTo(x + brickWidth - brickRounding, y);
+                ctx.arc(x + brickWidth - brickRounding, y + brickRounding, brickRounding, -piOn2, 0);
+                ctx.lineTo(x + brickWidth, y + brickHeight - brickRounding);
+                ctx.arc(x + brickWidth - brickRounding, y + brickHeight - brickRounding, brickRounding, 0, piOn2);
+                ctx.lineTo(x + brickRounding, y + brickHeight);
+                ctx.arc(x + brickRounding, y + brickHeight - brickRounding, brickRounding, piOn2, pi);
+                ctx.lineTo(x, y + brickRounding);
+                ctx.arc(x + brickRounding, y + brickRounding, brickRounding, -pi, -piOn2);
+                ctx.closePath();
+            } else {
+                ctx.rect(x, y, brickWidth, brickHeight);
+            }
             ctx.fill();
             if (groutWidth) {
                 ctx.globalAlpha = .3;
@@ -64,11 +68,11 @@ function createRepeatingBrickPattern(
             }
 
             if (text && whole) {
-                let c = text[count++ % text.length];
+                let c = ''+text[count++ % text.length];
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'top'
-                ctx.font = '' + brickHeight + 'px serif';
-                let fontSize = brickHeight;
+                let fontSize = floor(min(brickHeight, brickWidth * 1.5 / max(1, c.length)) * (.8 + rng() * .2));
+                ctx.font = '' + fontSize + 'px serif';
                 //ctx.lineWidth = groutWidth / 2;
                 ctx.fillStyle = groutColor;
                 ctx.fillText(c, x + brickWidth / 2, y);

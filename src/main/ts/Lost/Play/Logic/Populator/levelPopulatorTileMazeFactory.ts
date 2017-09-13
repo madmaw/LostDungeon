@@ -11,50 +11,63 @@ interface DiceSymbolAndCost {
 }
 
 function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, doorChance: number, deadendChance: number): LevelPopulator {
-    return (game: Game, rng: RandomNumberGenerator, tiles: Tile[][], width: number, height: number, depth: number, features: Feature[]) => {
+    return (game: Game, rng: RandomNumberGenerator, tiles: Tile[][], width: number, height: number, depth: number, tileDefinition: TileDefinition[]) => {
 
         function countFloors(x: number, y: number, decrementDoors?: number) {
             return countSurroundingTiles(tiles, width, height, x, y, function (tile: Tile) {
-                let doorCount = doorCounts[tile.name];
+                let doorCount = doorCounts[tile.tileName];
                 if (decrementDoors && doorCount) {
-                    doorCounts[tile.name]--;
+                    doorCounts[tile.tileName]--;
                 }
-                return tile.type == TILE_TYPE_FLOOR && !doorCount ?
+                return tile.tileType == TILE_TYPE_FLOOR && !doorCount ?
                     1 : 0;
             });
         }
 
-        function getRandomSymbol(maxValue: number, diceHint: number, diceType: DiceType, persistence: number): DiceSymbolAndCost {
+        function getRandomSymbol(maxValue: number, diceHint: number, diceType: DiceType, persistence: number, preferredResourceTypeHint?: ResourceType): DiceSymbolAndCost {
             let categories = DICE_TYPE_HINT_SYMBOL_COSTS[diceType];
             let costs = categories[diceHint%categories.length];
             let indices: number[] = [];
             arrayForEach(costs, function (v: number, i: number) {
                 if (v != nil) {
-                    indices.push(i);
+                    arrayPush(indices, i);
                 }
             });
+            let result: DiceSymbolAndCost;
             while (persistence) { 
                 let index = rng(indices.length);
                 let symbol = indices[index];
                 let cost = costs[symbol];
-                if (cost <= maxValue) {
-                    return {
+                if (cost <= maxValue && (!result || result.cost < cost )) {
+                    if (!diceType && preferredResourceTypeHint && isSymbolResource(symbol) && symbol != preferredResourceTypeHint) {
+                        // make it into a non-resource type
+                        symbol = DICE_SYMBOL_ATTACK;
+                    }
+                    result = {
                         symbol: symbol,
                         cost: cost
                     };
                 }
                 persistence--;
             }
+            return result;
+        }
+
+        function getDiceLevel(valueCount: number) {
+            return max(0, floor((valueCount - .4) / 2 - depth * .1));
         }
 
         function createRandomDice(maxValueCount: number, maxSideValueCount: number, diceHint: number, diceType: DiceType, ownerId?: number): Dice {
 
-            let level = max(0, floor(sqrt(maxValueCount)) - 1);
-            if (!level) {
+            let maxLevel = getDiceLevel(maxValueCount);
+            let preferredResourceType: ResourceType;
+            if (!maxLevel) {
+                preferredResourceType = diceType;
                 diceType = DICE_TYPE_NEUTRAL;
             }
             let symbols: DiceSymbol[][] = [];
             let empty: boolean = <any>1;
+            let totalValueCount = 0;
             countForEach(3, function (i: number) {
                 let faceSymbols = [];
                 let sideValueCount: number;
@@ -65,27 +78,28 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
                 }
                 sideValueCount = min(maxSideValueCount, sideValueCount);
                 maxValueCount -= sideValueCount;
+                totalValueCount += sideValueCount;
 
                 while (faceSymbols.length < 4 && sideValueCount > 0) {
-                    let symbolAndCost = getRandomSymbol(sideValueCount, diceHint, diceType, ceil(sideValueCount));
+                    let symbolAndCost = getRandomSymbol(sideValueCount, diceHint, diceType, ceil(sideValueCount * 2), preferredResourceType);
                     empty = empty && !symbolAndCost;
                     if (symbolAndCost) {
                         sideValueCount -= symbolAndCost.cost;
-                        faceSymbols.push(symbolAndCost.symbol);
+                        arrayPush(faceSymbols, symbolAndCost.symbol);
                     } else {
                         break;
                     }
                 }
-                symbols.push(faceSymbols, faceSymbols);
+                arrayPushAll(symbols, [faceSymbols, faceSymbols]);
             })
-
+            let level = getDiceLevel(totalValueCount);
             if (!empty) {
                 let dice: Dice = {
                     diceId: game.nextEntityId++,
-                    level: level,
+                    diceLevel: level,
                     owner: ownerId,
                     symbols: symbols,
-                    type: diceType
+                    diceType: diceType
                 }
                 return dice;
             }
@@ -110,7 +124,7 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
             let badTile = levelFindTile(
                 level,
                 function (tile: Tile, x: number, y: number) {
-                    return tile.type == TILE_TYPE_FLOOR && x >= rx - buffer && y >= ry - buffer && x < rx + rw + buffer && y < ry + rh + buffer;
+                    return tile.tileType == TILE_TYPE_FLOOR && x >= rx - buffer && y >= ry - buffer && x < rx + rw + buffer && y < ry + rh + buffer;
                 }
             );
 
@@ -122,8 +136,8 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
                 for (let x = rx; x < rx + rw; x++) {
                     for (let y = ry; y < ry + rh; y++) {
                         let tile = tiles[x][y];
-                        tile.type = TILE_TYPE_FLOOR;
-                        tile.name = room;
+                        tile.tileType = TILE_TYPE_FLOOR;
+                        tile.tileName = room;
                     }
                 }
             }
@@ -141,7 +155,7 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
         }];
         while (pathSoFar.length) {
             let step = pathSoFar[0];
-            tiles[step.x][step.y].type = TILE_TYPE_FLOOR;
+            tiles[step.x][step.y].tileType = TILE_TYPE_FLOOR;
             let index;
             if (rng() > bendiness) {
                 index = step.preferredIndex;
@@ -150,9 +164,9 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
             if (index == nil) {
                 index = rng(step.directions.length);
             }
-            let orientation = step.directions.splice(index, 1)[0];
+            let orientation = arraySplice(step.directions, index, 1)[0];
             if (!step.directions.length) {
-                pathSoFar.splice(0, 1);
+                arraySplice(pathSoFar, 0, 1);
             }
   
             let delta = ORIENTATION_DIFFS[orientation];
@@ -162,7 +176,7 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
                 // if we've got through on a door, we need to decrement those doors
                 countFloors(tx, ty, 1);
 
-                pathSoFar.splice(0, 0, {
+                arraySplice(pathSoFar, 0, 0, <PointAndDirections>{
                     x: tx,
                     y: ty,
                     directions: copyArray(ORIENTATION_ALL),
@@ -179,10 +193,10 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
             function (tile: Tile, x: number, y: number) {
                 let p = { x: x, y: y };
                 if (countFloors(x, y) == 1) {
-                    deadends.push(p);
+                    arrayPush(deadends, p);
                 }
-                if (tile.type == TILE_TYPE_FLOOR) {
-                    floorTiles.push(p);
+                if (tile.tileType == TILE_TYPE_FLOOR) {
+                    arrayPush(floorTiles, p);
                 }
             }
         );
@@ -190,32 +204,78 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
         randomizeArray(rng, deadends);
         randomizeArray(rng, floorTiles);
         // handle any features
-        arrayForEach(features, function (feature: Feature) {
-            switch (feature.type) {
-                case FEATURE_TYPE_ENTRANCE:
-                    let point: Point;
-                    if (deadends.length) {
-                        point = deadends.splice(0, 1)[0];
-                    } else {
-                        point = {
-                            x: rng(width),
-                            y: rng(height)
-                        }
-                    }
-                    let entranceTile = tiles[point.x][point.y];
-                    entranceTile.type = TILE_TYPE_ROOFLESS;
-                    entranceTile.name = feature.name;
+        arrayForEach(tileDefinition, function (tileDefinition: TileDefinition) {
+            let tile: Tile;
+            switch (tileDefinition.tileType) {
+                case TILE_TYPE_PIT:
+                    {
+                        let tileX;
+                        let tileY;
+                        do {
+                            tileX = rng(width);
+                            tileY = rng(height);
+                            tile = tiles[tileX][tileY];
+                        } while (tile.tileType != TILE_TYPE_SOLID || !countFloors(tileX, tileY));
+                    }   
                     break;
-                case FEATURE_TYPE_EXIT:
-                    let exitTile: Tile;
-                    do {
-                        exitTile = tiles[rng(width)][rng(height)];
-                    } while (exitTile.type != TILE_TYPE_SOLID);
-                    exitTile.type = TILE_TYPE_PIT;
-                    exitTile.name = feature.name;
+                default:
+                    {
+                        let tileX: number;
+                        let tileY: number;
+                        if (deadends.length) {
+                            let point = arraySplice(deadends, 0, 1)[0];
+                            tileX = point.x;
+                            tileY = point.y;
+                        } else {
+                            tileX = rng(width);
+                            tileY = rng(height)
+                        }
+                        tile = tiles[tileX][tileY];
+                    }
                     break;
             }
+            tile.tileType = tileDefinition.tileType;
+            tile.tileName = tileDefinition.tileName;
+            tile.featureType = tileDefinition.featureType;
+            tile.scribbles = tileDefinition.scribbles;
+            if (tileDefinition.boss) {
+                // create a horrible monster
+                let bossDice: Dice[] = [];
+                let bossId = game.nextEntityId++;
+                mapForEach(DICE_TYPE_HINT_SYMBOL_COSTS, function (diceType: string, hintsToCosts: { [_: number]: number[] }) {
+                    mapForEach(hintsToCosts, function (hint: string, costs: number[]) {
+                        let maxValueCount;
+                        if (diceType == <any>DICE_TYPE_NEUTRAL) {
+                            maxValueCount = 6;
+                        } else {
+                            maxValueCount = 30;
+                        }
+                        let dice = createRandomDice(maxValueCount, 100, <any>hint, <any>diceType, bossId)
+                        dice.diceLevel = max(0, dice.diceLevel - 1);
+                        arrayPush(bossDice, dice);
+                    });
+                });
+
+                let boss: Entity = {
+                    id: bossId,
+                    behaviorType: BEHAVIOR_TYPE_MONSTER,
+                    diceSlots: bossDice.length,
+                    dice: bossDice,
+                    healthSlots: 4,
+                    personality: {
+                        collectDiceSymbolWeights: DICE_SYMBOL_COLLECT_DESIRABILITY,
+                        playDiceSymbolWeights: DICE_SYMBOL_PLAY_DESIRABILITY, 
+                        randomness: 0
+                    },
+                    entityOrientation: ORIENTATION_EAST,
+                    resourceCounts: zeroResourceMap(),
+                    entityType: ENTITY_TYPE_BOSS
+                }
+                tile.entity = boss;
+            }
         });
+
+
         arrayForEachReverse(deadends, function (deadend: Point) {
             let remove: boolean;
             // still a deadend?
@@ -229,8 +289,8 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
                     if (fromx >= 0 && fromx < width && tox >= 0 && tox < width && fromy >= 0 && fromy < height && toy >= 0 && toy < height) {
                         let to = tiles[tox][toy];
                         let from = tiles[fromx][fromy];
-                        if (to.type == TILE_TYPE_SOLID && from.type == TILE_TYPE_FLOOR) {
-                            to.type = TILE_TYPE_FLOOR;
+                        if (to.tileType == TILE_TYPE_SOLID && from.tileType == TILE_TYPE_FLOOR) {
+                            to.tileType = TILE_TYPE_FLOOR;
                             remove = <any>1;
                         }
                     }
@@ -242,69 +302,136 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
         let attackType: DiceType = rng(4);
         let defendType: DiceType = rng(4);
 
+
         // add in some monsters
-        let monsterCount = max(0, depth - 2);
-        monsterCount += rng(monsterCount);
+        let monsterCount = max(0, depth - 1);
+        monsterCount += rng(sqrt(monsterCount));
         arrayForEachReverse(floorTiles, function (floorTile: Point) {
             if (monsterCount) {
                 let tile = tiles[floorTile.x][floorTile.y];
+                if (!tile.entity) {
+                    let entityLevel = rng(depth - 1) + 1;
+                    let healthSlots = floor(sqrt(entityLevel));
+                    let diceSlots = entityLevel - rng(entityLevel >> 1) + 1;
 
-                let entityLevel = rng(depth) + 1;
-                let healthSlots = max(1, rng(sqrt(entityLevel >> 1)));
-                let diceSlots = entityLevel - rng(entityLevel >> 1) + 1;
+                    let diceCount = diceSlots - rng(diceSlots >> 1);
 
-                let diceCount = diceSlots - rng(diceSlots >> 1);
 
-                let dice: Dice[] = [];
-                let entityId = game.nextEntityId++;
-                let entityType = rng(4);
-                while (diceCount) {
-                    diceCount--;
-                    let newDice = createRandomDice(rng(diceCount)+1, entityLevel, diceCount, entityType, entityId);
-                    if (newDice) {
-                        dice.push(newDice);
+                    let collectDiceSymbolWeights: number[] = [];
+                    let playDiceSymbolWeights: number[] = [];
+                    arrayForEach(DICE_SYMBOL_PLAY_DESIRABILITY, function (baseDesirability: number, index: number) {
+                        arrayPush(playDiceSymbolWeights, baseDesirability + baseDesirability * rng())
+                        arrayPush(collectDiceSymbolWeights, DICE_SYMBOL_COLLECT_DESIRABILITY[index] + rng()/2)
+                    });
+
+                    let dice: Dice[] = [];
+                    let entityId = game.nextEntityId++;
+                    let entityType: DiceType;
+                    let diceHintOffset;
+                    let scribbles: string[];
+                    if (depth <= 2) {
+                        // should just get resource dice
+                        diceCount = 3;
+                        diceHintOffset = 0;
+                        entityType = DICE_TYPE_NEUTRAL;
+                        scribbles = ['throw', 'attack', 'die'];
+                    } else {
+                        if (diceCount > 3) {
+                            diceHintOffset = rng(diceCount);
+                        } else {
+                            diceHintOffset = 4;
+                        }
+                        entityType = rng(4)
                     }
-                }
 
-                let entity: Entity = {
-                    behaviorType: BEHAVIOR_TYPE_MONSTER,
-                    dice: dice,
-                    diceSlots: diceSlots,
-                    resourceCounts: {},
-                    entityOrientation: rng(4),
-                    healthSlots: healthSlots,
-                    id: entityId
-                }
+                    let hasLeveledDice: boolean;
+                    let hasResourceDice: boolean;
+                    while (diceCount) {
+                        diceCount--;
+                        let diceHint = diceHintOffset + diceCount;
+                        let maxValueCount = rng(diceCount * 1.7) + 2;
+                        let maxDiceSideValue = max(1, getDiceLevel(maxValueCount) + floor(sqrt(depth)-1));
+                        let newDice = createRandomDice(maxValueCount, maxDiceSideValue, diceHint, entityType, entityId);
+                        hasLeveledDice = hasLeveledDice || <any>newDice.diceLevel;
 
-                tile.entity = entity;
-                monsterCount--;
+                        // increase the appeal of rerolling if the level is high and the dice has a type
+                        if (newDice.diceLevel && newDice.diceType) {
+                            collectDiceSymbolWeights[newDice.diceType] += newDice.diceLevel * .4;
+                        }
+
+                        if (newDice) {
+                            arrayPush(dice, newDice);
+                        }
+                    }
+                    if (hasLeveledDice && !hasResourceDice) {
+                        diceSlots++;
+                        let resourceDice = createRandomDice(2.4, 2, entityType, DICE_TYPE_NEUTRAL, entityId);
+                        arrayPush(dice, resourceDice);
+                    }
+
+
+                    let entity: Entity = {
+                        behaviorType: BEHAVIOR_TYPE_MONSTER,
+                        dice: dice,
+                        // always have a free slot
+                        diceSlots: diceSlots + 1,
+                        resourceCounts: zeroResourceMap(),
+                        entityOrientation: rng(4),
+                        healthSlots: healthSlots,
+                        id: entityId,
+                        personality: {
+                            collectDiceSymbolWeights: collectDiceSymbolWeights,
+                            playDiceSymbolWeights: playDiceSymbolWeights,
+                            randomness: rng() / depth,
+                        },
+                        entityType: ENTITY_TYPE_MONSTER
+                    }
+
+                    tile.entity = entity;
+                    tile.scribbles = scribbles;
+                    monsterCount--;
+                }
             }
             return <any>monsterCount;
         });
 
+        let secretCount = min(rng(2), deadends.length);
         // add in some treasures
-        let treasurePileCount = sqrt(depth) + 3;
-        let diceHint = 0;
+        let treasurePileCount = rng(sqrt(depth)) + 3;
+        let diceHint = 3 + depth;
         // do the deadends first, but use floor tiles if we run out
-        deadends.push.apply(deadends, floorTiles);
+        arrayPushAll(deadends, floorTiles);
         arrayForEach(deadends, function (deadend: Point) {
             let tile = tiles[deadend.x][deadend.y];
-            let treasures = min(treasurePileCount, max(rng() * rng() * rng(depth+1), 1));
-            while (treasures > 0) {
+            let treasures = min(treasurePileCount, max(rng(sqrt(depth)), 1));
+            while (treasures > 0 && tile.tileType == TILE_TYPE_FLOOR && !tile.entity && !tile.featureType) {
                 let diceType: DiceType;
                 let maxValueCount;
                 let maxSideValueCount;
+                let scribbles: string[];
                 if (depth < 3) {
                     // ensure an even spread early on
                     diceType = DICE_TYPE_NEUTRAL;
-                    maxValueCount = 3;
+                    maxValueCount = 2.4;
                     maxSideValueCount = 1;
+                    secretCount = 0;
+
+                    scribbles = NEUTRAL_DICE_HINT_SCRIBBLES[diceHint % NEUTRAL_DICE_HINT_SCRIBBLES.length];
                 } else {
                     diceHint = rng(99);
                     diceType = rng(4);
-                    let maxLevel = rng(depth);
-                    maxValueCount = 2 + rng(sqrt(maxLevel) + 2) + sqrt(maxLevel * 2);
+                    let maxLevel = sqrt(rng(depth)) + 1;
+                    maxValueCount = 1 + rng(maxLevel * 2);
                     maxSideValueCount = 1 + maxLevel;
+                }
+                if (secretCount) {
+                    secretCount--;
+                    tile.tileType = TILE_TYPE_HIDDEN;
+                    maxValueCount += 2;
+                    maxSideValueCount++;
+                }
+                if (!tile.scribbles) {
+                    tile.scribbles = scribbles;
                 }
                 let dice = createRandomDice(maxValueCount, maxSideValueCount, diceHint, diceType);
                 diceHint++;
@@ -312,7 +439,7 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
                     let slot = getBestAvailableTileSlotKey(TILE_SLOTS_ALL, tile, 0, 0);
                     tile.dice[slot] = {
                         dice: dice,
-                        face: rng(6)
+                        upturnedFace: rng(6)
                     }
                 }
                 treasures--;

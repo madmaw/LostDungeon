@@ -3,5 +3,6 @@ interface PlayStateData {
     playerTransition?: {
         entity: Entity;
         entryLocation: LevelLocation;
+        
     }
 }

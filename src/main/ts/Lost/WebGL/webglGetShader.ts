@@ -11,9 +11,10 @@ function webglGetShader(gl: WebGLRenderingContext, theSource: string, type: numb
     gl.compileShader(shader);
 
     // See if it compiled successfully
-
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        throw new Error(gl.getShaderInfoLog(shader));
+    if (FEATURE_CHECK_SHADER_ERRORS) {
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            throw gl.getShaderInfoLog(shader);
+        }
     }
 
     return shader;

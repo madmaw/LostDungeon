@@ -1,1 +1,1 @@
-type InputData = void | InputDataCollectDice | InputDataPlayDice;
+type InputData = void | InputDataCollectDice | InputDataPlayDice | InputDataTurn;

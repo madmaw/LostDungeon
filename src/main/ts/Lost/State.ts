@@ -1,23 +1,19 @@
 interface State {
 
-    elementId: string;
-    element?: HTMLElement;
+    stateElementId: string;
+    stateElement?: HTMLElement;
     stateListener?: StateListener;
     eventListeners?: { [_: string]: EventListenerOrEventListenerObject };
 
-    init(stateListener: StateListener): void;
+    initState(stateListener: StateListener): void;
 
-    start();
-
-    stop();
-
-    destroy();
+    destroyState();
 
 }
 
 function stateDefaultInit(state: State, stateListener: StateListener, eventListeners?: { [_: string]: EventListenerOrEventListenerObject }): void {
-    state.element = getElementById(state.elementId);
-    state.element.removeAttribute('class');
+    state.stateElement = getElemById(state.stateElementId);
+    state.stateElement.removeAttribute('class');
     state.stateListener = stateListener;
     mapForEach(eventListeners, function (name: string, eventListener: EventListenerOrEventListenerObject) {
         w.addEventListener(name, eventListener, <any>{ passive: false });
@@ -27,9 +23,9 @@ function stateDefaultInit(state: State, stateListener: StateListener, eventListe
 
 function stateDefaultDestroy() {
     let state: State = this;
-    state.element.setAttribute('class', 'h');
+    setAttrib(state.stateElement, 'class', 'h');
     mapForEach(state.eventListeners, function (name: string, eventListener: EventListenerOrEventListenerObject) {
-        w.removeEventListener(name, eventListener);
+        w.removeEventListener(name, eventListener, <any>{ passive: false });
     });
 }
 

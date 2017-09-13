@@ -3,7 +3,7 @@ function arrayForEachReverse<A>(a: A[], f: (a: A, i: number) => boolean | void):
         i--;
         let v = a[i];
         if (f(v, i)) {
-            a.splice(i, 1);
+            arraySplice(a, i, 1);
         }
     }
     return !a.length;

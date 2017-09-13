@@ -1,13 +1,13 @@
 interface TileSlot {
     dx: number;
     dy: number;
-    rotation: number;
+    slotRotation: number;
 }
 
 let TILE_SLOTS_OFFENSIVE: { [_: number]: TileSlot } = {};
 let TILE_SLOTS_DEFENSIVE: { [_: number]: TileSlot } = {};
 let TILE_SLOTS_ALL: { [_: number]: TileSlot } = {};
-let dimension = 6;
+let dimension = 5;
 let TILE_SLOT_COUNT = dimension * dimension;
 
 let c = .5 / dimension - .5;
@@ -21,10 +21,10 @@ countForEach(dimension, function (x: number) {
             tileSlotBag = TILE_SLOTS_OFFENSIVE;
         }
         let index = x + y * dimension;
-        let tileSlot = {
+        let tileSlot: TileSlot = {
             dx: x / dimension + c,
             dy: y / dimension + c,
-            rotation: random() * piOn6 + piOn6
+            slotRotation: random() * piOn6 + piOn6
         };
         tileSlotBag[index] = tileSlot;
         TILE_SLOTS_ALL[index] = tileSlot;

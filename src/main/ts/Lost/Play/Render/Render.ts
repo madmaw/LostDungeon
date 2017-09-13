@@ -19,6 +19,6 @@ function renderDefaultDraw(gl: WebGLRenderingContext, transformStack: Matrix4[],
     arrayPushAll(transformStack, render.localTransforms);
     render.doDraw(gl, transformStack, pickTextures);
     let length = render.localTransforms.length;
-    transformStack.splice(transformStack.length - length, length);
+    arraySplice(transformStack, transformStack.length - length, length);
 
 }

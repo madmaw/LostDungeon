@@ -2,18 +2,25 @@
 ///<reference path="../Util/createElement.ts"/>
 
 function homeStateFactory(gameService: GameService): StateFactory {
-    return function() {
+    return function (stateId: StateTypeId, stateData: HomeStateData) {
         var result: State = {
-            elementId: 'h',
-            init: function (stateListener: StateListener) {
+            stateElementId: 'h',
+            initState: function (stateListener: StateListener) {
                 stateDefaultInit(result, stateListener, {})
 
                 let universe = gameService.getUniverse();
 
-                let element = result.element;
+                let element = result.stateElement;
+
+                let successElement = getElemById('w');
+                if (stateData && stateData.justExited) {
+                    successElement.removeAttribute('class');
+                } else {
+                    successElement.setAttribute('class', 'h');
+                }
 
                 // add listeners
-                let newGameElement = getElementById('n');
+                let newGameElement = getElemById('n');
                 newGameElement.onclick = function() {
                     let game = gameService.createGame();
                     let playerEntity: Entity = {
@@ -24,7 +31,8 @@ function homeStateFactory(gameService: GameService): StateFactory {
                         resourceCounts: {},
                         dice: [],
                         healthSlots: 1,
-                        diceSlots: 4
+                        diceSlots: 3,
+                        entityType: ENTITY_TYPE_PLAYER
                     };
                     let data: PlayStateData = {
                         game: game,
@@ -32,45 +40,20 @@ function homeStateFactory(gameService: GameService): StateFactory {
                             entity: playerEntity,
                             entryLocation: {
                                 levelId: game.nextLevelId,
-                                tileName: '11'
+                                tileName: '10'
                             }
                         }
                     };
                     stateListener(STATE_TYPE_PLAY, data);
                 };
-                newGameElement.setAttribute('href', '#_' + universe.nextGameId);
-
-                // TODO might need to reduce down to a single game
+                setAttrib(newGameElement, 'href', '#_' + universe.nextGameId);
 
                 // add in existing games
-                var existingGamesElement = getElementById('e');
+                var existingGamesElement = getElemById('e');
                 existingGamesElement.innerHTML = '';
-                let games = gameService.getGames(universe.gameIds);
-                arrayForEachReverse(games, function (game: Game) {
-                    let elementName;
-                    let status;
-                    if (game.inactive) {
-                        elementName = 'span';
-                        status = 'Died ';
-                    } else {
-                        elementName = 'a';
-                        status = 'Last Played ';
-                    }
-                    let a = createElement(elementName, { 'href': '#' + game.gameId});
-                    a.innerHTML = '<h2>Expedition ' + game.gameId + '</h2>Depth ' + game.playerLevelId + '<br>'+status + game.updated;
-                    if (!game.inactive) {
-                        a.onclick = function () {
-                            let data: PlayStateData = {
-                                game: game
-                            };
-                            stateListener(STATE_TYPE_PLAY, data);
-                        }
-                    }
-                    existingGamesElement.appendChild(a);
-                });
 
                 let dimension = element.clientHeight;
-                let rng = trigRandomNumberGeneratorFactory();
+                let rng = mathRandomNumberGenerator;
                 let colors = createRandomWallColors(rng);
                 let backgroundImage = createRepeatingBrickPattern(
                     rng,
@@ -88,14 +71,41 @@ function homeStateFactory(gameService: GameService): StateFactory {
                     'LOST DUNGEON '.split('')
                 );
                 let dataURL = backgroundImage.toDataURL();
-                element.setAttribute('style', 'background-image:url(' + dataURL + ')');
+                setAttrib(element, 'style', 'background-image:url(' + dataURL + ')');
+
+
+
+                let games = gameService.getGames(universe.gameIds);
+                arrayForEachReverse(games, function (game: Game) {
+                    let elementName = 'a';
+                    let elementAttributes: { [_: string]: string };
+                    let status;
+                    if (!game.gameState) {
+                        status = 'Last Played ';
+                        elementAttributes = { 'href': '#' + game.gameId };
+                    } else {
+                        if (game.gameState == GAME_STATE_WON) {
+                            status = 'Escaped '
+                        } else {
+                            status = 'Died ';
+                        }
+                    }
+                    let a = createElement(elementName, elementAttributes);
+                    a.innerHTML = '<h2>Expedition ' + game.gameId + '</h2>Depth ' + game.playerLevelId + '<br>' + status + game.updated;
+                    if (!game.gameState) {
+                        a.onclick = function () {
+                            let data: PlayStateData = {
+                                game: game
+                            };
+                            stateListener(STATE_TYPE_PLAY, data);
+                        }
+                    }
+                    existingGamesElement.appendChild(a);
+                });
+                                                                    
 
             },
-            start: function () {
-            },
-            stop: function () {
-            },
-            destroy: stateDefaultDestroy
+            destroyState: stateDefaultDestroy
         };
         return result;
     

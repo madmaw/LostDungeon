@@ -1,10 +1,26 @@
+interface RenderAndIndex {
+    render: Render;
+    index: number;
+}
+
+interface EntityRenderSoundEffects {
+    hurt: SoundEffect;
+    diceLand: SoundEffect;
+    diceThrow: SoundEffect;
+    diceCollect: SoundEffect;
+    stepFailed: SoundEffect;
+    powerup: SoundEffect;
+    fall: SoundEffect;
+}
+
+
 interface EntityRender extends Render {
     entity: Entity;
-    position: Matrix4;
-    rotation: Matrix4;
-    facing: Matrix4;
+    bodyPosition: Matrix4;
+    bodyRotation: Matrix4;
+    headRotation: Matrix4;
     healthRenders: Render[],
-    diceRenders: { [_: number]: Render },
+    diceRenders: { [_: number]: RenderAndIndex },
     effectiveResourceCounts: { [_: number]: number },
     effectiveHealth: number
 }
@@ -14,12 +30,13 @@ function entityRenderFactory(
     position: Matrix4,
     rotation: Matrix4,
     healthRenders: Render[],
-    diceRenders: { [_: number]: Render },
+    diceRenders: { [_: number]: RenderAndIndex },
     tileRenders: Render[][],
     redrawInventory: () => void,
     halfDiceSize: number,
     effectiveResourceCounts: { [_: number]: number },
-    effectiveHealth: number
+    effectiveHealth: number,
+    soundEffects: EntityRenderSoundEffects
 ): EntityRender {
 
     function look(radians: number, height: number, stepBack): Matrix4 {
@@ -42,8 +59,8 @@ function entityRenderFactory(
         let r2 = shortenAngle(r * 2);
         return [
             matrixRotateZ4(a * multiplier),
-            matrixTranslate4(0, (.5 - halfDiceSize * 3) * translationMultiplier, 0),
-            matrixRotateZ4(-r2 * multiplier),
+            matrixTranslate4(0, (.5 - halfDiceSize * 1.4) * translationMultiplier, 0),
+            matrixRotateZ4((-r2 + pi / 4) * multiplier),
             matrixRotateX4(pi * multiplier / 4),
             matrixRotateY4(pi * multiplier / 4)
         ];
@@ -59,11 +76,14 @@ function entityRenderFactory(
         consume: function (t: number, delta: LevelDelta): Animation {
             let animation: Animation;
             // anything entity related will have the value of 'entity' in the data
-            if (delta.data && (<any>delta.data).entity == entity) {
-                switch (delta.type) {
+            if (delta.deltaData && (<any>delta.deltaData).entity == entity) {
+                switch (delta.deltaType) {
+                    case LEVEL_DELTA_TYPE_MOVE_INVALID:
+                        soundEffects.stepFailed(random(), entityRender.localTransforms);
+                        break;
                     case LEVEL_DELTA_TYPE_MOVE:
                         {
-                            let moveData = <LevelDeltaDataMove>delta.data;
+                            let moveData = <LevelDeltaDataMove>delta.deltaData;
                             let dpos = ORIENTATION_DIFFS[moveData.moveDirection];
                             let targetPosition = matrixTranslate4(moveData.fromX + dpos.x, .5, moveData.fromY + dpos.y);
                             let duration = 250;
@@ -79,7 +99,7 @@ function entityRenderFactory(
                         break;
                     case LEVEL_DELTA_TYPE_TURN:
                         {
-                            let turnData = <LevelDeltaDataTurn>delta.data;
+                            let turnData = <LevelDeltaDataTurn>delta.deltaData;
                             let fromAngle = ORIENTATION_ANGLES[turnData.fromOrientation];
                             let toAngle = ORIENTATION_ANGLES[turnData.toOrientation];
                             toAngle = normalizeAngle(toAngle, fromAngle);
@@ -104,8 +124,8 @@ function entityRenderFactory(
                                 easingQuadraticInFactory(duration),
                                 [
                                     effectCopyMatrixIntoFactory(
-                                        entityRender.facing,
-                                        valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.facing), look(-pi / 3, .5, .3))
+                                        entityRender.headRotation,
+                                        valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.headRotation), look(-pi / 3, .5, .3))
                                     )
                                 ]
                             );
@@ -119,7 +139,7 @@ function entityRenderFactory(
                                 duration,
                                 easingQuadraticInFactory(duration),
                                 [
-                                    effectCopyMatrixIntoFactory(entityRender.facing, valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.facing), look(-pi / 9, .3, .5)))
+                                    effectCopyMatrixIntoFactory(entityRender.headRotation, valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.headRotation), look(-pi / 9, .3, .5)))
                                 ]
 
                             );
@@ -129,14 +149,15 @@ function entityRenderFactory(
                         {
                             let duration1 = 600;
                             let duration2 = 600;
-                            let fallData = <LevelDeltaDataFall>delta.data;
+                            let fallData = <LevelDeltaDataFall>delta.deltaData;
+                            soundEffects.fall(1, entityRender.localTransforms);
                             animation = animationChainedProxyFactory(
                                 animationTweenFactory(
                                     t,
                                     duration1,
                                     easingQuadraticInFactory(duration1),
                                     [
-                                        effectCopyMatrixIntoFactory(entityRender.facing, valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.facing), look(-piOn2, -.5, 0)))
+                                        effectCopyMatrixIntoFactory(entityRender.headRotation, valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.headRotation), look(-piOn2, -.5, 0)))
                                     ]
                                 ),
                                 function (t: number) {
@@ -145,7 +166,7 @@ function entityRenderFactory(
                                         duration2,
                                         easingQuadraticOutFactory(duration2),
                                         [
-                                            effectCopyMatrixIntoFactory(entityRender.facing, valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.facing), look(-piOn2, -1, 0)))
+                                            effectCopyMatrixIntoFactory(entityRender.headRotation, valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.headRotation), look(-piOn2, -1, 0)))
                                         ]
                                     );
                                 }
@@ -156,23 +177,28 @@ function entityRenderFactory(
                     case LEVEL_DELTA_TYPE_DROP_IN:
                         {
                             let duration = 999;
-                            animation = animationTweenFactory(
-                                t,
-                                duration,
-                                easingQuadraticInFactory(duration),
-                                [
-                                    effectCopyMatrixIntoFactory(entityRender.facing, valueFactoryMatrix4InterpolationFactory(look(-pi / 2, 1, 0), look(-pi / 9, .3, .5)))
-                                ]
+                            animation = animationChainedProxyFactory(
+                                animationTweenFactory(
+                                    t,
+                                    duration,
+                                    easingLinearFactory(duration),
+                                    [
+                                        effectCopyMatrixIntoFactory(entityRender.headRotation, valueFactoryMatrix4InterpolationFactory(look(-pi / 2, 1.5, 0), look(-pi / 9, .3, .5)))
+                                    ]
+                                ),
+                                function () {
+                                    soundEffects.stepFailed(.5, entityRender.localTransforms);
+                                }
                             );
                         }
                         break;
                     case LEVEL_DELTA_TYPE_COLLECT_DICE:
                         {
                             // look up the tile and remove the dice renderer
-                            let collectDiceData = <LevelDeltaDataCollectDice>delta.data;
+                            let collectDiceData = <LevelDeltaDataCollectDice>delta.deltaData;
                             let tileRender = <CompositeRender>tileRenders[collectDiceData.fromTileX][collectDiceData.fromTileY];
-                            let diceRender = tileRender.children[collectDiceData.fromTilePosition];
-                            delete tileRender.children[collectDiceData.fromTilePosition];
+                            let diceRender = tileRender.childRenders[collectDiceData.fromTilePosition];
+                            delete tileRender.childRenders[collectDiceData.fromTilePosition];
                             // add and animate dice render to this render
                             let previousTransforms = copyArray(tileRender.localTransforms);
                             arrayPushAll(previousTransforms, diceRender.localTransforms);
@@ -188,7 +214,8 @@ function entityRenderFactory(
                             //console.log('new position ' + newPosition[0] + ", " + newPosition[1] + "," + newPosition[2]);
 
                             let offsetTranslate = matrixTranslate4(oldPosition[0] - newPosition[0], halfDiceSize - newPosition[1], oldPosition[2] - newPosition[2]);
-                            let yAngle = TILE_SLOTS_ALL[collectDiceData.fromTilePosition].rotation;
+                            let tileSlot: TileSlot = TILE_SLOTS_ALL[collectDiceData.fromTilePosition];
+                            let yAngle = tileSlot.slotRotation;
                             let rnow = r;
                             let offsetSpin = matrixMultiplyStack4(getDiceTransformationStack(collectDiceData.toDiceSlot, rnow, -1).reverse());
                             let yRotation = matrixRotateY4(yAngle);
@@ -200,9 +227,14 @@ function entityRenderFactory(
                             diceRender.localTransforms = [offsetSpin, offsetRotate, offsetTranslate, rotateTo, yRotation, offsetDiceRotation];
                             diceRender.animating = <any>1;
 
-                            diceRenders[collectDiceData.dice.diceId] = diceRender;
+                            diceRenders[collectDiceData.dice.diceId] = {
+                                render: diceRender,
+                                index: collectDiceData.toDiceSlot
+                            };
 
                             let targetTransform = matrixTranslate4(0, 0, 0);
+
+                            soundEffects.diceCollect(1, entityRender.localTransforms);
 
                             let duration = 999;
                             animation = animationCompositeFactory([
@@ -238,19 +270,22 @@ function entityRenderFactory(
                                     if (entity.behaviorType == BEHAVIOR_TYPE_PLAYER) {
                                         redrawInventory();
                                     }
-                                    diceRender.animating = false;
+                                    diceRender.animating = <any>0;
                                 }
                             )
                         }
                         break;
                     case LEVEL_DELTA_TYPE_PLAY_DICE:
                         {
-                            redrawInventory();
-                            let playDiceData = <LevelDeltaDataPlayDice>delta.data;
-                            let playedDiceRender = diceRenders[playDiceData.dice.diceId];
+
+                            if (entity.behaviorType == BEHAVIOR_TYPE_PLAYER) {
+                                redrawInventory();
+                            }
+                            let playDiceData = <LevelDeltaDataPlayDice>delta.deltaData;
+                            let playedDiceRender = diceRenders[playDiceData.dice.diceId].render;
                             delete diceRenders[playDiceData.dice.diceId];
                             let toTileRender = <CompositeRender>tileRenders[playDiceData.toTileX][playDiceData.toTileY];
-                            toTileRender.children[playDiceData.toTilePosition] = playedDiceRender;
+                            toTileRender.childRenders[playDiceData.toTilePosition] = playedDiceRender;
                             // position the dice render
                             let tileSlot: TileSlot = TILE_SLOTS_ALL[playDiceData.toTilePosition];
                             let toFaceRotation = DICE_FACE_ROTATIONS[playDiceData.toFace];
@@ -265,7 +300,7 @@ function entityRenderFactory(
                             let sourceTranslate = matrixTranslate4(oldPosition[0] - playDiceData.toTileX, oldPosition[1], oldPosition[2] - playDiceData.toTileY);
                             let targetTranslate = matrixTranslate4(tileSlot.dx, halfDiceSize, tileSlot.dy);
 
-                            // TODO use this to have a throwing motion
+                            // use this to have a throwing motion
                             let sourceDropHeight = matrixIdentity4();
                             let targetDropHeight = matrixTranslate4(0, (entity.lookingDown?.2:.4) + random()/7, 0);
 
@@ -277,7 +312,7 @@ function entityRenderFactory(
 
                             let rotationY = matrixCopy4(rotation);
                             let rotationYFrom = ORIENTATION_ANGLES[entity.entityOrientation];
-                            let rotationYTo = TILE_SLOTS_ALL[playDiceData.toTilePosition].rotation;
+                            let rotationYTo = tileSlot.slotRotation;
 
                             playedDiceRender.localTransforms = [
                                 sourceTranslate,
@@ -287,6 +322,8 @@ function entityRenderFactory(
                                 sourceDiceFaceRotation
                             ];
 
+
+                            soundEffects.diceThrow(random(), entityRender.localTransforms);
                             let duration1 = 800;
                             let duration2 = 600;
                             animation = animationCompositeFactory([
@@ -305,31 +342,39 @@ function entityRenderFactory(
                                         })
                                     ]
                                 ),
-                                animationTweenFactory(
-                                    t,
-                                    duration2,
-                                    easingQuadraticOutFactory(duration2/2),
-                                    [
-                                        effectCopyMatrixIntoFactory(sourceDropHeight, valueFactoryMatrix4InterpolationFactory(matrixCopy4(sourceDropHeight), targetDropHeight))
-                                    ]
+                                animationChainedProxyFactory(
+                                    animationTweenFactory(
+                                        t,
+                                        duration2,
+                                        easingQuadraticOutFactory(duration2 / 2),
+                                        [
+                                            effectCopyMatrixIntoFactory(sourceDropHeight, valueFactoryMatrix4InterpolationFactory(matrixCopy4(sourceDropHeight), targetDropHeight))
+                                        ]
+                                    ),
+                                    function () {
+                                        soundEffects.diceLand(random(), toTileRender.localTransforms);
+                                    }
                                 )
                             ]);
 
                         }
                         break;
                     case LEVEL_DELTA_TYPE_RESOURCE_CHANGE:
-                        {
-                            let levelDeltaDataResourceChange = <LevelDeltaDataResourceChange>delta.data;
-                            entityRender.effectiveResourceCounts = levelDeltaDataResourceChange.newEffectiveResourceCounts;
-                            if (levelDeltaDataResourceChange.entity.behaviorType == BEHAVIOR_TYPE_PLAYER) {
-                                redrawInventory();
-                            }
+                        let levelDeltaDataResourceChange = <LevelDeltaDataResourceChange>delta.deltaData;
+                        entityRender.effectiveResourceCounts = levelDeltaDataResourceChange.newEffectiveResourceCounts;
+                        // note falls through
+                    case LEVEL_DELTA_TYPE_DICE_SLOTS_CHANGE:
+                        if (levelDeltaDataResourceChange.entity.behaviorType == BEHAVIOR_TYPE_PLAYER) {
+                            redrawInventory();
                         }
                         break;
                     case LEVEL_DELTA_TYPE_HEALTH_CHANGE:
                         {
-                            let levelDeltaDataHealthChange = <LevelDeltaDataHealthChange>delta.data;
+                            let levelDeltaDataHealthChange = <LevelDeltaDataHealthChange>delta.deltaData;
                             entityRender.effectiveHealth = levelDeltaDataHealthChange.totalHealth;
+                            if (levelDeltaDataHealthChange.deltaHealth < 0) {
+                                soundEffects.hurt(-levelDeltaDataHealthChange.deltaHealth/2, entityRender.localTransforms);
+                            }
                             if (levelDeltaDataHealthChange.entity.behaviorType == BEHAVIOR_TYPE_PLAYER) {
                                 if (levelDeltaDataHealthChange.deltaHealth < 0) {
                                     // animate in some screen shake
@@ -342,13 +387,52 @@ function entityRenderFactory(
                                             return random() * m;
                                         },
                                         [
-                                            effectCopyMatrixIntoFactory(entityRender.facing, valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.facing), matrixRotate4(random(), random(), random(), pi/6)))
+                                            effectCopyMatrixIntoFactory(entityRender.headRotation, valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.headRotation), matrixRotate4(random(), random(), random(), pi/6)))
                                         ]
                                     )
                                 }
                                 redrawInventory();
+                            } else {
+                                // animate in/out the health
+                                let animations: Animation[] = [];
+                                countForEach(abs(levelDeltaDataHealthChange.deltaHealth), function (i: number) {
+                                    let effects: Effect[];
+                                    let transforms: Matrix4[];
+                                    let slot: number;
+                                    if (levelDeltaDataHealthChange.deltaHealth > 0) {
+                                        // animate it back in
+                                        slot = levelDeltaDataHealthChange.totalHealth - i - 1;
+                                        let rotation = matrixRotateZ4(pi);
+                                        let scale = matrixScale4(0, 0, 0);
+                                        transforms = [rotation, scale];
+                                        effects = [
+                                            effectCopyMatrixIntoFactory(rotation, valueFactoryMatrix4RotationFactory(0, 0, 1, pi2, 0)),
+                                            effectCopyMatrixIntoFactory(scale, valueFactoryMatrix4InterpolationFactory(matrixCopy4(scale), matrixIdentity4()))
+                                        ];
+                                    } else {
+                                        // animate it out
+                                        slot = levelDeltaDataHealthChange.totalHealth + i;
+                                        let rotation = matrixIdentity4();
+                                        let scale = matrixIdentity4();
+                                        transforms = [rotation, scale];
+                                        effects = [
+                                            effectCopyMatrixIntoFactory(rotation, valueFactoryMatrix4RotationFactory(1, 0, 0, 0, pi2)),
+                                            effectCopyMatrixIntoFactory(scale, valueFactoryMatrix4InterpolationFactory(matrixCopy4(scale), matrixScale4(0, 0, 0)))
+                                        ];
+                                    }
+                                    let healthRender = healthRenders[slot];
+                                    healthRender.localTransforms = transforms;
+                                    let duration = 999;
+                                    let animation = animationTweenFactory(
+                                        t,
+                                        duration,
+                                        easingQuadraticInFactory(duration),
+                                        effects
+                                    );
+                                    animations.push(animation);
+                                });
+                                animation = animationCompositeFactory(animations);
                             }
-
                         }
                         break;
                     case LEVEL_DELTA_TYPE_DIE:
@@ -361,11 +445,68 @@ function entityRenderFactory(
                                     duration,
                                     easingQuadraticInFactory(duration),
                                     [
-                                        effectCopyMatrixIntoFactory(entityRender.facing, valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.facing), matrixRotateZ4(-pi / 2)))
+                                        effectCopyMatrixIntoFactory(entityRender.headRotation, valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.headRotation), matrixRotateZ4(-pi / 2)))
                                     ]
                                 )
                             }
                         }
+                        break;
+                    case LEVEL_DELTA_TYPE_CONSUME_FEATURE:
+                        // wreck it
+                        {
+
+                            // look up the tile and start moving the feature toward us
+                            let levelDataConsumeFeature = <LevelDeltaDataConsumeFeature>delta.deltaData;
+                            let tileRender = <CompositeRender>tileRenders[levelDataConsumeFeature.fromTileX][levelDataConsumeFeature.fromTileY];
+                            let featureRender = tileRender.childRenders['b'];
+
+                            let oldTransforms = matrixCopy4(featureRender.localTransforms);
+                            let oldTransform = matrixMultiplyStack4(oldTransforms);
+                            let oldPosition = vectorTransform3Matrix4(0, 0, 0, oldTransform);
+
+                            // make a drinking gesture
+                            let rotationAngle = ORIENTATION_ANGLES[entity.entityOrientation];
+                            let rotateY = matrixRotateY4(rotationAngle);
+                            let rotateX = matrixIdentity4();
+                            let scale = matrixIdentity4();
+                            let translate = matrixIdentity4();
+                            //let targetTransform = matrixRotateX4(pi);
+                            featureRender.localTransforms.push(translate, scale, rotateY, rotateX);
+
+
+                            let duration = 999;
+                            animation = animationTweenFactory(
+                                t,
+                                duration,
+                                easingQuadraticInFactory(duration),
+                                [
+                                    effectCopyMatrixIntoFactory(translate, valueFactoryMatrix4InterpolationFactory(matrixCopy4(translate), matrixTranslate4(0, -oldPosition[1] + .7, 0))),
+                                    effectCopyMatrixIntoFactory(rotateX, valueFactoryMatrix4RotationFactory(1, 0, 0, 0, -(pi2)/3)),
+                                ]
+                            );
+
+                            animation = animationChainedProxyFactory(
+                                animation,
+                                function (t: number) {
+                                    soundEffects.powerup(1, entityRender.localTransforms);
+                                    return animationChainedProxyFactory(
+                                        animationTweenFactory(
+                                            t,
+                                            duration,
+                                            easingQuadraticInFactory(duration),
+                                            [
+                                                effectCopyMatrixIntoFactory(scale, valueFactoryMatrix4InterpolationFactory(matrixCopy4(scale), matrixScale4(1, 0, 0))),
+                                            ]
+                                        ),
+                                        function () {
+                                            // don't actualy produce an animation, destroy the feature render
+                                            delete tileRender.childRenders['b'];
+                                        }
+                                    );
+                                }
+                            )
+                        }
+
                         break;
 
                 }
@@ -378,18 +519,14 @@ function entityRenderFactory(
             // don't actually draw the player
             let renderAll = entity.behaviorType != BEHAVIOR_TYPE_PLAYER;
 
-            mapForEach(diceRenders, function (diceId: string, diceRender: Render) {
+            mapForEach(diceRenders, function (diceId: string, diceRenderAndIndex: RenderAndIndex) {
+                let diceRender = diceRenderAndIndex.render;
                 if (diceRender.animating || renderAll) {
-                    let i;
-                    arrayForEach(entity.dice, function (dice: Dice, index: number) {
-                        if (dice && dice.diceId == <any>diceId) {
-                            i = index;
-                        }
-                    });
+                    let i = diceRenderAndIndex.index;
                     let diceTransformationStack = getDiceTransformationStack(i, r, 1);
                     arrayPushAll(transformStack, diceTransformationStack);
                     diceRender.draw(gl, transformStack, pickTexture);
-                    transformStack.splice(transformStack.length - diceTransformationStack.length, diceTransformationStack.length);
+                    arraySplice(transformStack, transformStack.length - diceTransformationStack.length, diceTransformationStack.length);
                 }
             });
             if (renderAll) {
@@ -401,18 +538,18 @@ function entityRenderFactory(
                 }
                 arrayForEach(healthRenders, function (healthRender: Render, i: number) {
                     if (i <= entityRender.effectiveHealth || healthRender.animating) {
-                        let a = -r / 2 + (pi2 * i) / entity.healthSlots;
-                        transformStack.push(matrixRotateZ4(a), matrixTranslate4(0, radius, 0), matrixRotateZ4(-a), matrixRotateY4(r));
+                        let a = -r / 4 + (pi2 * i) / entity.healthSlots;
+                        arrayPushAll(transformStack, [matrixRotateZ4(a), matrixTranslate4(0, radius, 0), matrixRotateZ4(-a), matrixRotateY4(r)]);
                         healthRender.draw(gl, transformStack, pickTexture);
-                        transformStack.splice(transformStack.length - 4, 4);
+                        arraySplice(transformStack, transformStack.length - 4, 4);
                     }
                 });
             }
         },
         entity: entity,
-        facing: look(-pi / 9, .3, .5),
-        position: position,
-        rotation: rotation,
+        headRotation: look(-pi / 9, .3, .5),
+        bodyPosition: position,
+        bodyRotation: rotation,
         localTransforms: [position, rotation],
         healthRenders: healthRenders,
         diceRenders: diceRenders,

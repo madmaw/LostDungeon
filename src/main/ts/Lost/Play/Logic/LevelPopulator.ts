@@ -6,6 +6,6 @@ interface LevelPopulator {
         width: number,
         height: number,
         depth: number,
-        features: Feature[]
+        tileDefinition: TileDefinition[]
     ): void;
 }

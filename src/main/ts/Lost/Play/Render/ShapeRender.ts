@@ -11,6 +11,9 @@ interface ShapeRenderParams {
     textureCoordinatesBuffer: WebGLBuffer;
 }
 
+/*
+minified at http://evanw.github.io/glslx/
+
 let shapeRenderFragmentShaderScript = `
         varying highp vec2 vTextureCoord;
         uniform sampler2D uSampler;
@@ -29,6 +32,9 @@ let shapeRenderVertexShaderScript = `
             vTextureCoord = aTextureCoord;
         }
     `;
+*/
+let shapeRenderFragmentShaderScript = 'varying highp vec2 d;uniform sampler2D e;void main(){gl_FragColor=texture2D(e,d);}';
+let shapeRenderVertexShaderScript = 'attribute vec3 a;attribute vec2 b;uniform mat4 c;varying highp vec2 d;void main(){gl_Position=c*vec4(a,1),d=b;}';
 
 function shapeRenderInit(
     gl: WebGLRenderingContext,
@@ -37,11 +43,11 @@ function shapeRenderInit(
     indices: number[],
     textureCoordinates: number[]
 ): ShapeRenderParams {
-    let uTransform = gl.getUniformLocation(program, "uTransform");
-    let uSampler = gl.getUniformLocation(program, "uSampler");
+    let uTransform = gl.getUniformLocation(program, "c");
+    let uSampler = gl.getUniformLocation(program, "e");
 
-    let aVertexPosition = gl.getAttribLocation(program, "aVertexPosition");
-    let aTextureCoord = gl.getAttribLocation(program, "aTextureCoord");
+    let aVertexPosition = gl.getAttribLocation(program, "a");
+    let aTextureCoord = gl.getAttribLocation(program, "b");
 
     let vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);

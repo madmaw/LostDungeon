@@ -1,1 +1,3 @@
-﻿type HomeStateData = any;
+interface HomeStateData {
+    justExited?: boolean
+};

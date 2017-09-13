@@ -5,6 +5,5 @@ interface Game {
     nextLevelId: number;
     nextEntityId: number;
     playerLevelId?: LevelId;
-    randomNumberSeed: number;
-    inactive?: boolean;
+    gameState?: GameState;
 }

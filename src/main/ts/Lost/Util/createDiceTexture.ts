@@ -2,7 +2,7 @@ function createDiceTexture(width: number, height: number, textureCoordinates: nu
     let canvas = createCanvas(width, height);
     let ctx = canvas.getContext('2d');
 
-    let backgroundColor = DICE_TYPE_COLORS[dice.type];
+    let backgroundColor = DICE_TYPE_COLORS[dice.diceType];
     
     ctx.strokeStyle = '#000';
     ctx.textAlign = 'center';
@@ -37,7 +37,7 @@ function createDiceTexture(width: number, height: number, textureCoordinates: nu
             let cellSize = dh / span;
             let cx = 0;
             let cy = 0;
-            ctx.font = '' + (cellSize *.9) + 'px serif';
+            ctx.font = '' + (cellSize * 1.2) + 'px serif';
 
             arrayForEach(symbols, function (symbol: DiceSymbol, i: number) {
                 let character = DICE_SYMBOL_CHARACTERS[symbol];
@@ -68,15 +68,15 @@ function createDiceTexture(width: number, height: number, textureCoordinates: nu
 
             });
         }
-        if (dice.level) {
-            let levelFontSize = dh / 3;
+        if (dice.diceLevel) {
+            let levelFontSize = dh * .4;
             ctx.fillStyle = '#000';
             ctx.beginPath();
             ctx.arc(x1 + dw / 2, y1 + dh / 2, levelFontSize / 2, pi, -pi);
             ctx.fill();
-            ctx.font = '' + levelFontSize + 'px serif';
+            ctx.font = 'bold ' + levelFontSize + 'px serif';
             ctx.fillStyle = '#fff';
-            ctx.fillText(<any>dice.level, x1 + dw / 2, y1 + dh / 2);
+            ctx.fillText(<any>dice.diceLevel, x1 + dw / 2, y1 + dh / 2);
         }
 
 

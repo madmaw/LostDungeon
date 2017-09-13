@@ -1,7 +1,5 @@
 ﻿body {
-    font-family: sans-serif;
     margin: 0;
-    color: #ddd;
 }
 
 .h {
@@ -14,7 +12,6 @@
 
 a, #s {
    color: #ff8;
-   text-decoration: none;
    text-shadow: #fff 0 0 8px;
 }
 
@@ -44,6 +41,8 @@ h2 {
 
 #i {
     overflow: auto;
+    width: 33%;
+    white-space: normal;
 }
 
 #i, #c {
@@ -53,26 +52,27 @@ h2 {
 #p, #h {
     width: 100%;
     min-height: 100%;
+    white-space: nowrap;
 }
 
-#i, #s {
-    background-color: #445;
-    width: 24vw;
+#s {
+    width: 100%;
 }
 
 #c {
-    width: 75%;
-    margin-right: .5%;
+    width: 66%;
+    margin-right: 1%;
 }
 
 .t {
     border: .5vw solid #fd0;
     margin: .5vw;
     overflow: hidden;
-    width: 10vw;
-    height: 10vw;
+    width: 9vw;
+    height: 9vw;
 }
 
+/* responsive
 @media (max-aspect-ratio: 4/3) {
     #i {
         height: 32%;
@@ -94,3 +94,5 @@ h2 {
     }
 
 }
+*/
+

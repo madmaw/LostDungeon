@@ -104,6 +104,12 @@
                 }, {
                     from: /(=|:|return |\(|,)function\(([^\)]*)\)/g, 
                     to:"$1($2)=>"
+                }, {
+                    from: "<script>",
+                    to: "<script>var _;"
+                }, {
+                    from: "null",
+                    to: "_"
                 }]
             },
             dist: {

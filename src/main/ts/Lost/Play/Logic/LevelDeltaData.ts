@@ -8,4 +8,6 @@ type LevelDeltaData =
     LevelDeltaDataCollectDice |
     LevelDeltaDataPlayDice |
     LevelDeltaDataResourceChange |
-    LevelDeltaDataHealthChange;
+    LevelDeltaDataHealthChange |
+    LevelDeltaDataConsumeFeature |
+    LevelDeltaDataDiceSlotsChange;
