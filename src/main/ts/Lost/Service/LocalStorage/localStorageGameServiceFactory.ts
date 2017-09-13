@@ -8,11 +8,14 @@ function localStorageGameServiceFactory (prefix: string): GameService {
     var result = {
 
         getUniverse: function (): Universe {
-            let universeString = ls.getItem(prefix);
             let universe: Universe;
-            if (universeString) {
-                universe = JSON.parse(universeString);
-            } else {
+            if (FEATURE_PERSISTENCE ) {
+                let universeString = ls.getItem(prefix);
+                if (universeString) {
+                    universe = JSON.parse(universeString);
+                }            
+            }
+            if (!universe) {
                 universe = {
                     gameIds: [],
                     nextGameId: 1
@@ -23,11 +26,13 @@ function localStorageGameServiceFactory (prefix: string): GameService {
 
         getGames: function(gameIds: GameId[]): Game[] {
             let games: Game[] = [];
-            arrayForEach(gameIds, function (gameId: GameId) {
-                let gameString = ls.getItem(prefix + gameId);
-                let game = JSON.parse(gameString);
-                arrayPush(games, game);
-            });
+            if (FEATURE_PERSISTENCE) {
+                arrayForEach(gameIds, function (gameId: GameId) {
+                    let gameString = ls.getItem(prefix + gameId);
+                    let game = JSON.parse(gameString);
+                    arrayPush(games, game);
+                });
+            }
             return games;
         },
 
@@ -43,7 +48,9 @@ function localStorageGameServiceFactory (prefix: string): GameService {
                 nextLevelId: 1,
                 nextEntityId: 1
             }
-            saveGame(game);
+            if (FEATURE_PERSISTENCE) {
+                saveGame(game);
+            }
             return game;
         },
 
@@ -55,23 +62,29 @@ function localStorageGameServiceFactory (prefix: string): GameService {
                 levelHeight: height,
                 tiles: tiles
             };
-            saveGame(game);
-            return level;
-        },
-
-        getLevel: function(game: Game, levelId: LevelId): Level {
-            let levelString = ls.getItem(prefix + game.gameId + '_' + levelId);
-            let level: Level;
-            if (levelString) {
-                level = JSON.parse(levelString);
+            if (FEATURE_PERSISTENCE) {
+                saveGame(game);
             }
             return level;
         },
 
-        saveLevel: function(game: Game, level: Level): void {
-            saveGame(game);
-            if (level) {
-                ls.setItem(prefix + game.gameId + '_' + level.levelId, JSON.stringify(level));
+        getLevel: function (game: Game, levelId: LevelId): Level {
+            let level: Level;
+            if (FEATURE_PERSISTENCE) {
+                let levelString = ls.getItem(prefix + game.gameId + '_' + levelId);
+                if (levelString) {
+                    level = JSON.parse(levelString);
+                }
+            }
+            return level;
+        },
+
+        saveLevel: function (game: Game, level: Level): void {
+            if (FEATURE_PERSISTENCE) {
+                saveGame(game);
+                if (level) {
+                    ls.setItem(prefix + game.gameId + '_' + level.levelId, JSON.stringify(level));
+                }
             }
         }
 

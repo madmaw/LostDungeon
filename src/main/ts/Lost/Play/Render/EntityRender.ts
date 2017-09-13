@@ -176,20 +176,22 @@ function entityRenderFactory(
                         break;
                     case LEVEL_DELTA_TYPE_DROP_IN:
                         {
-                            let duration = 999;
-                            animation = animationChainedProxyFactory(
-                                animationTweenFactory(
-                                    t,
-                                    duration,
-                                    easingLinearFactory(duration),
-                                    [
-                                        effectCopyMatrixIntoFactory(entityRender.headRotation, valueFactoryMatrix4InterpolationFactory(look(-pi / 2, 1.5, 0), look(-pi / 9, .3, .5)))
-                                    ]
-                                ),
-                                function () {
-                                    soundEffects.stepFailed(.5, entityRender.localTransforms);
-                                }
-                            );
+                            if (FEATURE_ANIMATE_FALL) {
+                                let duration = 999;
+                                animation = animationChainedProxyFactory(
+                                    animationTweenFactory(
+                                        t,
+                                        duration,
+                                        easingLinearFactory(duration),
+                                        [
+                                            effectCopyMatrixIntoFactory(entityRender.headRotation, valueFactoryMatrix4InterpolationFactory(look(-pi / 2, 1.5, 0), look(-pi / 9, .3, .5)))
+                                        ]
+                                    ),
+                                    function () {
+                                        soundEffects.stepFailed(.5, entityRender.localTransforms);
+                                    }
+                                );
+                            }
                         }
                         break;
                     case LEVEL_DELTA_TYPE_COLLECT_DICE:
@@ -454,57 +456,60 @@ function entityRenderFactory(
                     case LEVEL_DELTA_TYPE_CONSUME_FEATURE:
                         // wreck it
                         {
-
-                            // look up the tile and start moving the feature toward us
                             let levelDataConsumeFeature = <LevelDeltaDataConsumeFeature>delta.deltaData;
                             let tileRender = <CompositeRender>tileRenders[levelDataConsumeFeature.fromTileX][levelDataConsumeFeature.fromTileY];
-                            let featureRender = tileRender.childRenders['b'];
+                            if (FEATURE_ANIMATE_CONSUME_FEATURE) {
+                                // look up the tile and start moving the feature toward us
+                                let featureRender = tileRender.childRenders['b'];
 
-                            let oldTransforms = matrixCopy4(featureRender.localTransforms);
-                            let oldTransform = matrixMultiplyStack4(oldTransforms);
-                            let oldPosition = vectorTransform3Matrix4(0, 0, 0, oldTransform);
+                                let oldTransforms = matrixCopy4(featureRender.localTransforms);
+                                let oldTransform = matrixMultiplyStack4(oldTransforms);
+                                let oldPosition = vectorTransform3Matrix4(0, 0, 0, oldTransform);
 
-                            // make a drinking gesture
-                            let rotationAngle = ORIENTATION_ANGLES[entity.entityOrientation];
-                            let rotateY = matrixRotateY4(rotationAngle);
-                            let rotateX = matrixIdentity4();
-                            let scale = matrixIdentity4();
-                            let translate = matrixIdentity4();
-                            //let targetTransform = matrixRotateX4(pi);
-                            featureRender.localTransforms.push(translate, scale, rotateY, rotateX);
+                                // make a drinking gesture
+                                let rotationAngle = ORIENTATION_ANGLES[entity.entityOrientation];
+                                let rotateY = matrixRotateY4(rotationAngle);
+                                let rotateX = matrixIdentity4();
+                                let scale = matrixIdentity4();
+                                let translate = matrixIdentity4();
+                                //let targetTransform = matrixRotateX4(pi);
+                                featureRender.localTransforms.push(translate, scale, rotateY, rotateX);
 
 
-                            let duration = 999;
-                            animation = animationTweenFactory(
-                                t,
-                                duration,
-                                easingQuadraticInFactory(duration),
-                                [
-                                    effectCopyMatrixIntoFactory(translate, valueFactoryMatrix4InterpolationFactory(matrixCopy4(translate), matrixTranslate4(0, -oldPosition[1] + .7, 0))),
-                                    effectCopyMatrixIntoFactory(rotateX, valueFactoryMatrix4RotationFactory(1, 0, 0, 0, -(pi2)/3)),
-                                ]
-                            );
+                                let duration = 999;
+                                animation = animationTweenFactory(
+                                    t,
+                                    duration,
+                                    easingQuadraticInFactory(duration),
+                                    [
+                                        effectCopyMatrixIntoFactory(translate, valueFactoryMatrix4InterpolationFactory(matrixCopy4(translate), matrixTranslate4(0, -oldPosition[1] + .7, 0))),
+                                        effectCopyMatrixIntoFactory(rotateX, valueFactoryMatrix4RotationFactory(1, 0, 0, 0, -(pi2) / 3)),
+                                    ]
+                                );
 
-                            animation = animationChainedProxyFactory(
-                                animation,
-                                function (t: number) {
-                                    soundEffects.powerup(1, entityRender.localTransforms);
-                                    return animationChainedProxyFactory(
-                                        animationTweenFactory(
-                                            t,
-                                            duration,
-                                            easingQuadraticInFactory(duration),
-                                            [
-                                                effectCopyMatrixIntoFactory(scale, valueFactoryMatrix4InterpolationFactory(matrixCopy4(scale), matrixScale4(1, 0, 0))),
-                                            ]
-                                        ),
-                                        function () {
-                                            // don't actualy produce an animation, destroy the feature render
-                                            delete tileRender.childRenders['b'];
-                                        }
-                                    );
-                                }
-                            )
+                                animation = animationChainedProxyFactory(
+                                    animation,
+                                    function (t: number) {
+                                        soundEffects.powerup(1, entityRender.localTransforms);
+                                        return animationChainedProxyFactory(
+                                            animationTweenFactory(
+                                                t,
+                                                duration,
+                                                easingQuadraticInFactory(duration),
+                                                [
+                                                    effectCopyMatrixIntoFactory(scale, valueFactoryMatrix4InterpolationFactory(matrixCopy4(scale), matrixScale4(1, 0, 0))),
+                                                ]
+                                            ),
+                                            function () {
+                                                // don't actualy produce an animation, destroy the feature render
+                                                delete tileRender.childRenders['b'];
+                                            }
+                                        );
+                                    }
+                                )
+                            } else {
+                                delete tileRender.childRenders['b'];
+                            }
                         }
 
                         break;

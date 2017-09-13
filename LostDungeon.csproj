@@ -155,7 +155,6 @@
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\easingLinearFactory.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\easingQuadraticInFactory.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\Effect.ts" />
-    <TypeScriptCompile Include="src\main\ts\Lost\Animation\effectSetPropertyFactory.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Animation\animationTweenFactory.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Home\HomeStateData.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Domain\Entity.ts" />

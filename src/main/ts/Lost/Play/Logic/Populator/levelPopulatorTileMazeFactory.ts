@@ -237,8 +237,10 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
             tile.tileType = tileDefinition.tileType;
             tile.tileName = tileDefinition.tileName;
             tile.featureType = tileDefinition.featureType;
-            tile.scribbles = tileDefinition.scribbles;
-            if (tileDefinition.boss) {
+            if (FEATURE_TUTORIAL) {
+                tile.scribbles = tileDefinition.scribbles;
+            }
+            if (tileDefinition.boss && FEATURE_BOSS) {
                 // create a horrible monster
                 let bossDice: Dice[] = [];
                 let bossId = game.nextEntityId++;
@@ -334,7 +336,9 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
                         diceCount = 3;
                         diceHintOffset = 0;
                         entityType = DICE_TYPE_NEUTRAL;
-                        scribbles = ['throw', 'attack', 'die'];
+                        if (FEATURE_TUTORIAL) {
+                            scribbles = ['throw', 'attack', 'die'];
+                        }
                     } else {
                         if (diceCount > 3) {
                             diceHintOffset = rng(diceCount);
@@ -388,7 +392,9 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
                     }
 
                     tile.entity = entity;
-                    tile.scribbles = scribbles;
+                    if (FEATURE_TUTORIAL) {
+                        tile.scribbles = scribbles;
+                    }
                     monsterCount--;
                 }
             }
@@ -415,8 +421,9 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
                     maxValueCount = 2.4;
                     maxSideValueCount = 1;
                     secretCount = 0;
-
-                    scribbles = NEUTRAL_DICE_HINT_SCRIBBLES[diceHint % NEUTRAL_DICE_HINT_SCRIBBLES.length];
+                    if (FEATURE_TUTORIAL) {
+                        scribbles = NEUTRAL_DICE_HINT_SCRIBBLES[diceHint % NEUTRAL_DICE_HINT_SCRIBBLES.length];
+                    }
                 } else {
                     diceHint = rng(99);
                     diceType = rng(4);
@@ -430,7 +437,7 @@ function levelPopulatorTileMazeFactory(roomChance: number, bendiness: number, do
                     maxValueCount += 2;
                     maxSideValueCount++;
                 }
-                if (!tile.scribbles) {
+                if (!tile.scribbles && FEATURE_TUTORIAL) {
                     tile.scribbles = scribbles;
                 }
                 let dice = createRandomDice(maxValueCount, maxSideValueCount, diceHint, diceType);

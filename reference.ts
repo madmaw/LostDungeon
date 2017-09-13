@@ -1,18 +1,17 @@
 /// <reference path="src/main/ts/features.ts" />
 /// <reference path="src/main/ts/Lost/State.ts" />
 /// <reference path="src/main/ts/Lost/constants.ts"/>
+/// <reference path="src/main/ts/Lost/Animation/easingLinearFactory.ts" />
 //grunt-start
 /// <reference path="src/main/ts/Lost/Animation/Animation.ts" />
 /// <reference path="src/main/ts/Lost/Animation/animationChainedProxyFactory.ts" />
 /// <reference path="src/main/ts/Lost/Animation/animationCompositeFactory.ts" />
 /// <reference path="src/main/ts/Lost/Animation/animationTweenFactory.ts" />
 /// <reference path="src/main/ts/Lost/Animation/Easing.ts" />
-/// <reference path="src/main/ts/Lost/Animation/easingLinearFactory.ts" />
 /// <reference path="src/main/ts/Lost/Animation/easingQuadraticInFactory.ts" />
 /// <reference path="src/main/ts/Lost/Animation/easingQuadraticOutFactory.ts" />
 /// <reference path="src/main/ts/Lost/Animation/Effect.ts" />
 /// <reference path="src/main/ts/Lost/Animation/effectCopyMatrixIntoFactory.ts" />
-/// <reference path="src/main/ts/Lost/Animation/effectSetPropertyFactory.ts" />
 /// <reference path="src/main/ts/Lost/Animation/ValueFactory.ts" />
 /// <reference path="src/main/ts/Lost/Animation/valueFactoryMatrix4InterpolationFactory.ts" />
 /// <reference path="src/main/ts/Lost/Animation/valueFactoryMatrix4RotationFactory.ts" />

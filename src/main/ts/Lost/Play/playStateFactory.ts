@@ -405,7 +405,9 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                 game.gameState = GAME_STATE_DEAD;
             }
             // save the changes
-            gameService.saveLevel(game, level);
+            if (levelUpdate.deltas) {
+                gameService.saveLevel(game, level);
+            }
 
             // animate the update
             updateAnimation = consume(t, levelUpdate.deltas);
@@ -476,7 +478,7 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                             upperColor = colors.wallLower;
                             break;
                         default:
-                            if (tile.scribbles) {
+                            if (tile.scribbles && FEATURE_TUTORIAL) {
                                 text1 = [];
                                 let spaces = [];
                                 countForEach(((bricksAcross-.5) * bricksDown - tile.scribbles.length)/2, function () {

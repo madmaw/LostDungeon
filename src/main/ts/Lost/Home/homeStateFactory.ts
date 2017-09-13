@@ -11,12 +11,13 @@ function homeStateFactory(gameService: GameService): StateFactory {
                 let universe = gameService.getUniverse();
 
                 let element = result.stateElement;
-
-                let successElement = getElemById('w');
-                if (stateData && stateData.justExited) {
-                    successElement.removeAttribute('class');
-                } else {
-                    successElement.setAttribute('class', 'h');
+                if (FEATURE_SHOW_WIN) {
+                    let successElement = getElemById('w');
+                    if (stateData && stateData.justExited) {
+                        successElement.removeAttribute('class');
+                    } else {
+                        successElement.setAttribute('class', 'h');
+                    }
                 }
 
                 // add listeners
@@ -47,63 +48,61 @@ function homeStateFactory(gameService: GameService): StateFactory {
                     stateListener(STATE_TYPE_PLAY, data);
                 };
                 setAttrib(newGameElement, 'href', '#_' + universe.nextGameId);
-
                 // add in existing games
                 var existingGamesElement = getElemById('e');
                 existingGamesElement.innerHTML = '';
+                if (FEATURE_HOME_BACKGROUND) {
+                    let dimension = element.clientHeight;
+                    let rng = mathRandomNumberGenerator;
+                    let colors = createRandomWallColors(rng);
+                    let backgroundImage = createRepeatingBrickPattern(
+                        rng,
+                        dimension,
+                        dimension,
+                        5,
+                        8,
+                        .5,
+                        0,
+                        colors.wallUpper,
+                        colors.wallLower,
+                        4,
+                        .5,
+                        colors.wallLower,
+                        'LOST DUNGEON '.split('')
+                    );
+                    let dataURL = backgroundImage.toDataURL();
+                    setAttrib(element, 'style', 'background-image:url(' + dataURL + ')');
+                }
 
-                let dimension = element.clientHeight;
-                let rng = mathRandomNumberGenerator;
-                let colors = createRandomWallColors(rng);
-                let backgroundImage = createRepeatingBrickPattern(
-                    rng,
-                    dimension,
-                    dimension,
-                    5,
-                    8,
-                    .5,
-                    0,
-                    colors.wallUpper,
-                    colors.wallLower,
-                    4,
-                    .5,
-                    colors.wallLower,
-                    'LOST DUNGEON '.split('')
-                );
-                let dataURL = backgroundImage.toDataURL();
-                setAttrib(element, 'style', 'background-image:url(' + dataURL + ')');
-
-
-
-                let games = gameService.getGames(universe.gameIds);
-                arrayForEachReverse(games, function (game: Game) {
-                    let elementName = 'a';
-                    let elementAttributes: { [_: string]: string };
-                    let status;
-                    if (!game.gameState) {
-                        status = 'Last Played ';
-                        elementAttributes = { 'href': '#' + game.gameId };
-                    } else {
-                        if (game.gameState == GAME_STATE_WON) {
-                            status = 'Escaped '
+                if (FEATURE_PERSISTENCE) {
+                    let games = gameService.getGames(universe.gameIds);
+                    arrayForEachReverse(games, function (game: Game) {
+                        let elementName = 'a';
+                        let elementAttributes: { [_: string]: string };
+                        let status;
+                        if (!game.gameState) {
+                            status = 'Last Played ';
+                            elementAttributes = { 'href': '#' + game.gameId };
                         } else {
-                            status = 'Died ';
+                            if (game.gameState == GAME_STATE_WON) {
+                                status = 'Escaped '
+                            } else {
+                                status = 'Died ';
+                            }
                         }
-                    }
-                    let a = createElement(elementName, elementAttributes);
-                    a.innerHTML = '<h2>Expedition ' + game.gameId + '</h2>Depth ' + game.playerLevelId + '<br>' + status + game.updated;
-                    if (!game.gameState) {
-                        a.onclick = function () {
-                            let data: PlayStateData = {
-                                game: game
-                            };
-                            stateListener(STATE_TYPE_PLAY, data);
+                        let a = createElement(elementName, elementAttributes);
+                        a.innerHTML = '<h2>Expedition ' + game.gameId + '</h2>Depth ' + game.playerLevelId + '<br>' + status + game.updated;
+                        if (!game.gameState) {
+                            a.onclick = function () {
+                                let data: PlayStateData = {
+                                    game: game
+                                };
+                                stateListener(STATE_TYPE_PLAY, data);
+                            }
                         }
-                    }
-                    existingGamesElement.appendChild(a);
-                });
-                                                                    
-
+                        existingGamesElement.appendChild(a);
+                    });
+                }
             },
             destroyState: stateDefaultDestroy
         };
