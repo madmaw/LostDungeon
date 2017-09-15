@@ -6,6 +6,10 @@
     display: none;
 }
 
+#p {
+    overflow: hidden;
+}
+
 .t, #i, #c, #s {
     display: inline-block;
 }
@@ -72,27 +76,44 @@ h2 {
     height: 9vw;
 }
 
-/* responsive
 @media (max-aspect-ratio: 4/3) {
     #i {
-        height: 32%;
+        padding-top: 20vh;
+        height: 20vh;
+        white-space: nowrap;
+        pointer-events: none;
     }
 
     .t {
-        width: 13vh;
-        height: 13vh;
+        width: 15vh;
+        height: 15vh;
     }
 
     #c {
-        height: 67%;
+        height: 59.5%;
         margin: 0;
         margin-bottom: .5%;
+    }
+
+    #s h2 {
+        display: inline-block;
+
     }
 
     #i, #c {
         width: 100%;
     }
+    #s {
+        position: fixed;
+        top: 60vh;
+        right: 0;
+    }
+    #i {
+        overflow: auto;
+    }
+    #p {
+        white-space: normal;
+    }
 
 }
-*/
 

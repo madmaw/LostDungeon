@@ -36,7 +36,7 @@
             }
         },
         'closure-compiler': {
-            dist: {
+            js13k: {
                 closurePath: 'libbuild/closure-compiler',
                 js: 'build/out.js',
                 jsOutputFile: 'dist/out.min.js',
@@ -48,7 +48,21 @@
                     // ES6 output is not supported!!
                     language_out: 'ECMASCRIPT5'
                 }
+            },
+            dist: {
+                closurePath: 'libbuild/closure-compiler',
+                js: 'build/out.js',
+                jsOutputFile: 'dist/out.min.js',
+                maxBuffer: 500,
+                reportFile: 'closure.txt',
+                options: {
+                    compilation_level: 'WHITESPACE_ONLY',
+                    language_in: 'ECMASCRIPT5',
+                    // ES6 output is not supported!!
+                    language_out: 'ECMASCRIPT5'
+                }
             }
+
         },
         inline: {
             dist: {
@@ -183,9 +197,9 @@
 
     // Default task(s).
     grunt.registerTask('reset', ['clean:all']);
-    grunt.registerTask('prod', ['copy', 'ts:dist', 'closure-compiler', 'htmlmin', 'replace:dist']);
-    grunt.registerTask('dist', ['prod', 'uglify', 'compress:dist']); //, 'clean:js', 'clean:dist'
-    grunt.registerTask('js13k', ['prod', 'inline', 'replace:js13k_html', 'compress:js13k']);
+    grunt.registerTask('prod', ['copy', 'ts:dist', 'htmlmin']);
+    grunt.registerTask('dist', ['prod', 'closure-compiler:dist', 'replace:dist', 'compress:dist']); //, 'clean:js', 'clean:dist'
+    grunt.registerTask('js13k', ['prod', 'closure-compiler:js13k', 'inline', 'replace:js13k_html', 'compress:js13k']);
     grunt.registerTask('default', ['ts:dist']);
 
 };

@@ -52,10 +52,10 @@ function homeStateFactory(gameService: GameService): StateFactory {
                 var existingGamesElement = getElemById('e');
                 existingGamesElement.innerHTML = '';
                 if (FEATURE_HOME_BACKGROUND) {
-                    let dimension = element.clientHeight;
                     let rng = mathRandomNumberGenerator;
                     let colors = createRandomWallColors(rng);
-                    let backgroundImage = createRepeatingBrickPattern(
+                    let dimension = min(element.clientHeight, element.clientWidth);
+                    let backgroundImageUpper = createRepeatingBrickPattern(
                         rng,
                         dimension,
                         dimension,
@@ -67,9 +67,29 @@ function homeStateFactory(gameService: GameService): StateFactory {
                         colors.wallLower,
                         4,
                         .5,
-                        colors.wallLower,
+                        colors.grout,
                         'LOST DUNGEON '.split('')
                     );
+                    let backgroundImageLower = createRepeatingBrickPattern(
+                        rng,
+                        dimension,
+                        dimension,
+                        5,
+                        8,
+                        .5,
+                        0,
+                        colors.wallLower,
+                        colors.wallUpper,
+                        4,
+                        .5,
+                        colors.grout,
+                        'LOST DUNGEON '.split('')
+                    );
+                    let backgroundImage = createCanvas(dimension, dimension * 2);
+                    let backgroundContext = backgroundImage.getContext('2d');
+                    backgroundContext.drawImage(backgroundImageUpper, 0, 0);
+                    backgroundContext.drawImage(backgroundImageLower, 0, dimension);
+
                     let dataURL = backgroundImage.toDataURL();
                     setAttrib(element, 'style', 'background-image:url(' + dataURL + ')');
                 }
