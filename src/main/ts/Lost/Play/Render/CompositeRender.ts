@@ -9,9 +9,9 @@ function compositeRenderFactory(localTransforms: Matrix4[], childRenders: { [_: 
         childRenders: childRenders,
         draw: renderDefaultDraw,
         localTransforms: localTransforms,
-        doDraw: function (gl: WebGLRenderingContext, transformStack: Matrix4[], pickTextures: boolean) {
+        doDraw: function (gl: WebGLRenderingContext, transformStack: Matrix4[], scope: RenderScope) {
             mapForEach(render.childRenders, function (key: string, child: Render) {
-                child.draw(gl, transformStack, pickTextures);
+                child.draw(gl, transformStack, scope);
             });
         }
     };

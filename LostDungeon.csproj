@@ -108,6 +108,7 @@
     <TypeScriptCompile Include="src\main\ts\Lost\Matrix\matrixCopyInfo4.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Matrix\matrixRotate4.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Matrix\matrixScale4.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Matrix\matrixTranspose4.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Matrix\Vector3.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Matrix\vectorTransform3Matrix4.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\countSurroundingTiles.ts" />
@@ -126,6 +127,7 @@
     <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaDataPlayDice.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaDataResourceChange.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Play\Logic\LevelDeltaHealthChange.ts" />
+    <TypeScriptCompile Include="src\main\ts\Lost\Play\Render\RenderScope.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Sound\calculateVolume.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Sound\linearRampGain.ts" />
     <TypeScriptCompile Include="src\main\ts\Lost\Sound\SoundEffect.ts" />

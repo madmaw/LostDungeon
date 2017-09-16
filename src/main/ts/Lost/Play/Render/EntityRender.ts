@@ -447,7 +447,13 @@ function entityRenderFactory(
                                     duration,
                                     easingQuadraticInFactory(duration),
                                     [
-                                        effectCopyMatrixIntoFactory(entityRender.headRotation, valueFactoryMatrix4InterpolationFactory(matrixCopy4(entityRender.headRotation), matrixRotateZ4(-pi / 2)))
+                                        effectCopyMatrixIntoFactory(
+                                            entityRender.headRotation,
+                                            valueFactoryMatrix4InterpolationFactory(
+                                                matrixCopy4(entityRender.headRotation),
+                                                matrixMultiplyStack4([matrixRotateZ4(pi * .4), matrixRotateX4(-pi * .3), matrixTranslate4(0, -.4, -.5)])
+                                            )
+                                        )
                                     ]
                                 )
                             }
@@ -520,7 +526,7 @@ function entityRenderFactory(
             return animation;
         },
         draw: renderDefaultDraw,
-        doDraw: function(gl: WebGLRenderingContext, transformStack: Matrix4[], pickTexture: boolean): void {
+        doDraw: function (gl: WebGLRenderingContext, transformStack: Matrix4[], scope: RenderScope): void {
             // don't actually draw the player
             let renderAll = entity.behaviorType != BEHAVIOR_TYPE_PLAYER;
 
@@ -530,7 +536,7 @@ function entityRenderFactory(
                     let i = diceRenderAndIndex.index;
                     let diceTransformationStack = getDiceTransformationStack(i, r, 1);
                     arrayPushAll(transformStack, diceTransformationStack);
-                    diceRender.draw(gl, transformStack, pickTexture);
+                    diceRender.draw(gl, transformStack, scope);
                     arraySplice(transformStack, transformStack.length - diceTransformationStack.length, diceTransformationStack.length);
                 }
             });
@@ -545,7 +551,7 @@ function entityRenderFactory(
                     if (i <= entityRender.effectiveHealth || healthRender.animating) {
                         let a = -r / 4 + (pi2 * i) / entity.healthSlots;
                         arrayPushAll(transformStack, [matrixRotateZ4(a), matrixTranslate4(0, radius, 0), matrixRotateZ4(-a), matrixRotateY4(r)]);
-                        healthRender.draw(gl, transformStack, pickTexture);
+                        healthRender.draw(gl, transformStack, scope);
                         arraySplice(transformStack, transformStack.length - 4, 4);
                     }
                 });

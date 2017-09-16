@@ -580,19 +580,35 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                 let cameraPosition = matrixInvert4(cameraEntityRender.bodyPosition);
                 let cameraRotation = matrixInvert4(cameraEntityRender.bodyRotation);
                 let transformStack: Matrix4[] = [
-                    cameraProjectionMatrix,
                     cameraEntityRender.headRotation,
                     cameraRotation,
                     cameraPosition
                 ];
+                let lightLocations: number[] = [];
+                let lightCount = 0;
+                for (let entityId in entityRenders) {
+                    let entityRender = entityRenders[entityId];
+                    arrayPushAll(lightLocations, vectorTransform3Matrix4(0, 0, 0, entityRender.bodyPosition));
+                    lightCount++;
+                }
+                lightLocations = vectorTransform3Matrix4(0, 0, 0, cameraEntityRender.bodyPosition);
+                let renderScope: RenderScope = {
+                    projection: cameraProjectionMatrix,
+                    lightLocations: lightLocations,
+                    lightCount: lightCount,
+                    ambientLight: usePickTextures ? 1 : .6,
+                    maxDistanceSquared: 27,
+                    minDistanceMult: usePickTextures ? 1 : 0,
+                    usePickTextures: usePickTextures
+                };
 
                 levelFindTile(level, function (tile: Tile, x: number, y: number) {
                     let tileRender = tileRenders[x][y];
-                    tileRender.draw(gl, transformStack, usePickTextures);
+                    tileRender.draw(gl, transformStack, renderScope);
                 });
 
                 mapForEach(entityRenders, function (key: string, entityRender: Render) {
-                    entityRender.draw(gl, transformStack, usePickTextures);
+                    entityRender.draw(gl, transformStack, renderScope);
                 });
 
             }
@@ -816,16 +832,21 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                 //matrixPerspective4(pi / 3, canvasWidth / canvasHeight, .1, 1000000)
 
                 let transformStack: Matrix4[] = [
-                    projection,
                     matrixTranslate4(canvasWidth / 2, canvasHeight / 2, -50),
                     scaleMatrix,
                     matrixRotateX4(rotateX),
                     matrixRotateY4(rotateY),
-
                 ];
                 let oldTransforms = render.localTransforms;
                 render.localTransforms = [];
-                render.draw(context, transformStack, <any>0);
+                render.draw(context, transformStack, {
+                    lightLocations: [0, 0, 0],
+                    lightCount: 0,
+                    projection: projection,
+                    ambientLight: 1,
+                    maxDistanceSquared: 1,
+                    minDistanceMult: 1
+                });
                 render.localTransforms = oldTransforms;
 
                 var pixels = new Uint8Array(4 * canvasWidth * canvasHeight);
@@ -986,8 +1007,9 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                 // If creating the shader program failed, alert
 
                 if (FEATURE_CHECK_SHADER_ERRORS) {
-                    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-                        throw gl;
+                    let ok = gl.getProgramParameter(shaderProgram, gl.LINK_STATUS);
+                    if (!ok) {
+                        throw gl.getProgramInfoLog(shaderProgram);
                     }
                 }
 
@@ -998,6 +1020,12 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                     -.5, 0, .5,
                     .5, 0, -.5,
                     -.5, 0, -.5
+                ];
+                let surfaceNormals = [
+                    0, 1, 0,
+                    0, 1, 0,
+                    0, 1, 0,
+                    0, 1, 0
                 ];
                 let surfaceIndices = [
                     0, 2, 1,
@@ -1013,6 +1041,7 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                     gl,
                     shaderProgram,
                     surfaceVertices,
+                    surfaceNormals,
                     surfaceIndices,
                     surfaceTextureCoordinates
                 );
@@ -1056,13 +1085,62 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                     -halfDiceSize, halfDiceSize, halfDiceSize,
                     -halfDiceSize, halfDiceSize, -halfDiceSize
                 ];
+                let diceNormals = [
+                    // front face
+                    0, 0, 1,
+                    0, 0, 1,
+                    0, 0, 1,
+                    0, 0, 1,
+
+                    // back face
+                    0, 0, -1,
+                    0, 0, -1,
+                    0, 0, -1,
+                    0, 0, -1,
+
+                    // top face
+                    0, 1, 0,
+                    0, 1, 0,
+                    0, 1, 0,
+                    0, 1, 0,
+
+                    // bottom face
+                    0, -1, 0,
+                    0, -1, 0,
+                    0, -1, 0,
+                    0, -1, 0,
+
+                    // right face
+                    1, 0, 0,
+                    1, 0, 0,
+                    1, 0, 0,
+                    1, 0, 0,
+
+                    // left face
+                    -1, 0, 0,
+                    -1, 0, 0,
+                    -1, 0, 0,
+                    -1, 0, 0
+                ];
                 let diceIndices = [
-                    0, 1, 2, 0, 2, 3,    // front
-                    4, 5, 6, 4, 6, 7,    // back
-                    8, 9, 10, 8, 10, 11,   // top
-                    12, 13, 14, 12, 14, 15,   // bottom
-                    16, 17, 18, 16, 18, 19,   // right
-                    20, 21, 22, 20, 22, 23,   // left
+                    // front
+                    0, 1, 2,
+                    0, 2, 3,
+                    // back
+                    4, 5, 6,
+                    4, 6, 7,
+                    // top
+                    8, 9, 10,
+                    8, 10, 11,
+                     // bottom
+                    12, 13, 14,
+                    12, 14, 15,
+                    // right
+                    16, 17, 18,
+                    16, 18, 19,
+                    // left
+                    20, 21, 22,
+                    20, 22, 23,  
                 ];
                 diceTextureCoordinates = [
                     // Front
@@ -1100,47 +1178,13 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                     gl,
                     shaderProgram,
                     diceVertices,
+                    diceNormals,
                     diceIndices,
                     diceTextureCoordinates
                 );
                 let healthRadius = .1;
                 let healthInnerRadius = healthRadius * .6;
                 let healthDepth = .02;
-                /*
-                let halfHealthHeight = .12;
-                let healthVertices = [
-                    // top
-                    0, halfHealthHeight, 0,
-                    // north
-                    0, 0, healthRadius,
-                    // east
-                    healthRadius, 0, 0,
-                    // south
-                    0, 0, -healthRadius,
-                    // west
-                    -healthRadius, 0, 0,
-                    // bottom
-                    0, -halfHealthHeight, 0
-                ];
-                let healthIndices = [
-                    0, 1, 2, // top north east
-                    0, 2, 3, // top east south
-                    0, 3, 4, // top south west
-                    0, 4, 1, // top west north
-                    5, 2, 1, // bottom east north 
-                    5, 3, 2, // bottom south east
-                    5, 4, 3, // bottom west south
-                    5, 1, 4 // bottom north west
-                ];
-                let healthTextureCoordinates = [
-                    .5, 0, // top
-                    0, 1, // north
-                    1, 1, // east
-                    0, 1, // south
-                    1, 1, // west
-                    .5, 0 // bottom
-                ];
-                */
                 let healthVertices = [
 
                     // outside
@@ -1218,6 +1262,82 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                     // back center
                     0, 0, -healthDepth
                 ];
+                let healthNormals = [
+                    // 0. top divet              
+                    0, 1, 0,
+                    // 1. right top ridge start
+                    0, 1, 0,
+                    // 2. right top ridge end
+                    0, 1, 0,
+                    // 3. right top edge
+                    1, 0, 0,
+                    // 4. right bottom edge
+                    1, 0, 0,
+                    // 5. bottom point
+                    0, -1, 0,
+                    // 6. left bottom edge
+                    -1, 0, 0,
+                    // 7. left top edge
+                    -1, 0, 0,
+                    // 8. left top ridge start
+                    0, 1, 0,
+                    // 9. left top ridge end
+                    0, 1, 0,
+
+                    // inside front
+
+                    // 10. top divet
+                    0, 0, 1,
+                    // 11. right top ridge start
+                    0, 0, 1,
+                    // right top ridge end
+                    0, 0, 1,
+                    // right top edge
+                    0, 0, 1,
+                    // right bottom edge
+                    0, 0, 1,
+                    // bottom point
+                    0, 0, 1,
+                    // left bottom edge
+                    0, 0, 1,
+                    // left top edge
+                    0, 0, 1,
+                    // left top ridge start
+                    0, 0, 1,
+                    // left top ridge end
+                    0, 0, 1,
+
+                    // inside back
+
+                    // top divet
+                    0, 0, -1,
+                    // right top ridge start
+                    0, 0, -1,
+                    // right top ridge end
+                    0, 0, -1,
+                    // right top edge
+                    0, 0, -1,
+                    // right bottom edge
+                    0, 0, -1,
+                    // bottom point
+                    0, 0, -1,
+                    // left bottom edge
+                    0, 0, -1,
+                    // left top edge
+                    0, 0, -1,
+                    // left top ridge start
+                    0, 0, -1,
+                    // left top ridge end
+                    0, 0, -1,
+
+                    // front center
+                    0, 0, 1,
+
+                    // back center
+                    0, 0, -1,
+
+                ];
+
                 let healthIndices = [
                     // front edges
                     0, 10, 11,
@@ -1303,6 +1423,7 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                     gl,
                     shaderProgram,
                     healthVertices,
+                    healthNormals,
                     healthIndices,
                     healthTextureCoordinates
                 )
@@ -1374,6 +1495,69 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
 
                 ];
 
+                let featurePotionNormals = [
+                    // front
+
+                    // top left
+                    0, 0, 1,
+                    // top right
+                    0, 0, 1,
+                    // middle right
+                    0, 0, 1,
+                    // bottom right
+                    0, 0, 1,
+                    // bottom left
+                    0, 0, 1,
+                    // middle left
+                    0, 0, 1,
+
+                    // right
+
+                    // top back
+                    1, 0, 0,
+                    // top front
+                    1, 0, 0,
+                    // middle right
+                    1, 0, 0,
+                    // bottom right
+                    1, 0, 0,
+                    // bottom left
+                    1, 0, 0,
+                    // middle left
+                    1, 0, 0,
+
+                    // back
+
+                    // top left
+                    0, 0, -1,
+                    // top right
+                    0, 0, -1,
+                    // middle right
+                    0, 0, -1,
+                    // bottom right
+                    0, 0, -1,
+                    // bottom left
+                    0, 0, -1,
+                    // middle left
+                    0, 0, -1,
+
+                    // left
+                    // top left
+                    -1, 0, 0, 
+                    // top right
+                    -1, 0, 0, 
+                    // middle right
+                    -1, 0, 0, 
+                    // bottom right
+                    -1, 0, 0, 
+                    // bottom left
+                    -1, 0, 0, 
+                    // middle left
+                    -1, 0, 0, 
+
+                    // TODO probably want normals for top and bottom
+                ];
+
                 let featurePotionIndices = [
                     // front
                     0, 2, 1,
@@ -1424,6 +1608,7 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                     gl,
                     shaderProgram,
                     featurePotionVertices,
+                    featurePotionNormals,
                     featurePotionIndices,
                     featurePotionTextureCoordinates
                 );
