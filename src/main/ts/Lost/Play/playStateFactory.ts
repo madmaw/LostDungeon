@@ -579,36 +579,72 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
             if (cameraEntityRender) {
                 let cameraPosition = matrixInvert4(cameraEntityRender.bodyPosition);
                 let cameraRotation = matrixInvert4(cameraEntityRender.bodyRotation);
-                let transformStack: Matrix4[] = [
+                let transformStack: Matrix4[] = [];
+                let pointLights: PointLight[] = [];
+                let lightCount = 0;
+                if (!usePickTextures) {
+                    for (let entityId in entityRenders) {
+                        let entityRender = entityRenders[entityId];
+                        let isPlayer = entityRender.entity.behaviorType == BEHAVIOR_TYPE_PLAYER;
+                        let lightIntensity = isPlayer ? 1 : .3;
+                        let lightPosition = vectorTransform3Matrix4(0, 0, 0, entityRender.bodyPosition);
+                        lightPosition[1] += 0.2;
+                        pointLights.push({
+                            color: [min(1, lightIntensity*2), lightIntensity, lightIntensity],
+                            position: lightPosition,
+                            rangeSquared: isPlayer ?
+                                18 :
+                                2
+                        });
+                        lightCount++;
+                    }
+                }
+
+                function isInLight(x: number, y: number, z: number, buffer: number) {
+                    if (usePickTextures) {
+                        return true;
+                    } else {
+                        for (let pointLight of pointLights) {
+                            let dx = abs(pointLight.position[0] - x) - buffer;
+                            let dy = abs(pointLight.position[1] - y) - buffer;
+                            let dz = abs(pointLight.position[2] - z) - buffer;
+                            if (dx * dx + dy * dy + dz * dz <= pointLight.rangeSquared) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                let projection = matrixMultiplyStack4([
+                    cameraProjectionMatrix,
                     cameraEntityRender.headRotation,
                     cameraRotation,
                     cameraPosition
-                ];
-                let lightLocations: number[] = [];
-                let lightCount = 0;
-                for (let entityId in entityRenders) {
-                    let entityRender = entityRenders[entityId];
-                    arrayPushAll(lightLocations, vectorTransform3Matrix4(0, 0, 0, entityRender.bodyPosition));
-                    lightCount++;
-                }
-                lightLocations = vectorTransform3Matrix4(0, 0, 0, cameraEntityRender.bodyPosition);
+                ]);
+                let ambientLightBrightness = usePickTextures ? 1 : .5;
+                let ambientLight = [ambientLightBrightness, ambientLightBrightness, ambientLightBrightness];
+
                 let renderScope: RenderScope = {
-                    projection: cameraProjectionMatrix,
-                    lightLocations: lightLocations,
-                    lightCount: lightCount,
-                    ambientLight: usePickTextures ? 1 : .6,
-                    maxDistanceSquared: 27,
-                    minDistanceMult: usePickTextures ? 1 : 0,
+                    projection: projection,
+                    pointLights: pointLights,
+                    pointLightCount: lightCount,
+                    ambientLight: ambientLight,
                     usePickTextures: usePickTextures
                 };
 
                 levelFindTile(level, function (tile: Tile, x: number, y: number) {
-                    let tileRender = tileRenders[x][y];
-                    tileRender.draw(gl, transformStack, renderScope);
+                    // is it visible?
+                    if (isInLight(x, 0, y, .5)) {
+                        let tileRender = tileRenders[x][y];
+                        tileRender.draw(gl, transformStack, renderScope);
+                    }
                 });
 
-                mapForEach(entityRenders, function (key: string, entityRender: Render) {
-                    entityRender.draw(gl, transformStack, renderScope);
+                mapForEach(entityRenders, function (key: string, entityRender: EntityRender) {
+                    let position = vectorTransform3Matrix4(0, 0, 0, entityRender.bodyPosition);
+                    if (isInLight(position[0], position[1], position[2], .5)) {
+                        entityRender.draw(gl, transformStack, renderScope);
+                    }
                 });
 
             }
@@ -840,12 +876,10 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                 let oldTransforms = render.localTransforms;
                 render.localTransforms = [];
                 render.draw(context, transformStack, {
-                    lightLocations: [0, 0, 0],
-                    lightCount: 0,
-                    projection: projection,
-                    ambientLight: 1,
-                    maxDistanceSquared: 1,
-                    minDistanceMult: 1
+                    ambientLight: [1, 1, 1],
+                    pointLights: [],
+                    pointLightCount: 0,
+                    projection: projection
                 });
                 render.localTransforms = oldTransforms;
 
@@ -1493,6 +1527,26 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                     // middle left
                     -featurePotionNeckWidth, 0, -featurePotionNeckWidth,
 
+                    // top
+                    // north east
+                    featurePotionNeckWidth, featurePotionNeckHeight, featurePotionNeckWidth,
+                    // south east
+                    featurePotionNeckWidth, featurePotionNeckHeight, -featurePotionNeckWidth,
+                    // south west
+                    -featurePotionNeckWidth, featurePotionNeckHeight, -featurePotionNeckWidth,
+                    // north west
+                    -featurePotionNeckWidth, featurePotionNeckHeight, featurePotionNeckWidth,
+
+                    // bottom
+                    // north east
+                    featurePotionBaseWidth, -featurePotionBaseHeight, featurePotionBaseWidth,
+                    // south east
+                    featurePotionBaseWidth, -featurePotionBaseHeight, -featurePotionBaseWidth,
+                    // south west
+                    -featurePotionBaseWidth, -featurePotionBaseHeight, -featurePotionBaseWidth,
+                    // north west
+                    -featurePotionBaseWidth, -featurePotionBaseHeight, featurePotionBaseWidth,
+
                 ];
 
                 let featurePotionNormals = [
@@ -1555,7 +1609,26 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                     // middle left
                     -1, 0, 0, 
 
-                    // TODO probably want normals for top and bottom
+                    // top
+                    // north east
+                    0, 1, 0,
+                    // south east
+                    0, 1, 0,
+                    // south west
+                    0, 1, 0,
+                    // north west
+                    0, 1, 0,
+
+                    // bottom
+                    // north east
+                    0, -1, 0,
+                    // south east
+                    0, -1, 0,
+                    // south west
+                    0, -1, 0,
+                    // north west
+                    0, -1, 0,
+
                 ];
 
                 let featurePotionIndices = [
@@ -1584,12 +1657,12 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                     21, 23, 22,
 
                     // top
-                    0, 6, 12,
-                    18, 0, 12,
+                    24, 25, 26,
+                    24, 26, 27,
 
                     // base
-                    4, 22, 10,
-                    10, 22, 16
+                    28, 29, 30,
+                    28, 30, 31
                 ];
 
                 let featurePotionTextureCoordinates = [];
@@ -1603,6 +1676,16 @@ function playStateFactory(audioContext: AudioContext, gameService: GameService, 
                         0, .5
                     );
                 });
+                featurePotionTextureCoordinates.push(
+                    0, 1,
+                    1, 1,
+                    1, .5,
+                    0, .5,
+                    0, 1,
+                    1, 1,
+                    1, .5,
+                    0, .5
+                );
 
                 featurePotionRenderParams = shapeRenderInit(
                     gl,

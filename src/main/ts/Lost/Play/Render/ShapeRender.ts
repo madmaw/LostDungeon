@@ -8,10 +8,11 @@ interface ShapeRenderParams {
     uWorld: WebGLUniformLocation;
     uWorldInverseTranspose: WebGLUniformLocation;
     uWorldViewProjection: WebGLUniformLocation;
-    uLightPosition: WebGLUniformLocation;
+    uLightPositions: WebGLUniformLocation;
+    uLightColors: WebGLUniformLocation;
+    uLightMaxDistancesSquared: WebGLUniformLocation;
+    uLightCount: WebGLUniformLocation;
     uAmbientLight: WebGLUniformLocation;
-    uMinDistanceMult: WebGLUniformLocation;
-    uMaxDistanceSquared: WebGLUniformLocation;
     vertexBuffer: WebGLBuffer;
     normalBuffer: WebGLBuffer;
     indexBuffer: WebGLBuffer;
@@ -23,27 +24,43 @@ interface ShapeRenderParams {
 minified at http://evanw.github.io/glslx/
 */
 
+let MAX_LIGHTS = 16;
+
 let shapeRenderFragmentShaderScript = `
         precision mediump float;
 
         varying highp vec2 vTextureCoord;
         varying mediump vec3 vNormal;
-        varying mediump vec3 vSurfaceToLight;
+        varying mediump vec3 vSurfaceToLights[`+ MAX_LIGHTS +`];
 
+        uniform mediump float uLightMaxDistancesSquared[`+ MAX_LIGHTS +`];
+        uniform mediump vec3 uLightColors[`+ MAX_LIGHTS +`];
         uniform sampler2D uSampler;
-        uniform mediump float uAmbientLight;
-        uniform mediump float uMinDistanceMultiplier;
-        uniform mediump float uMaxDistanceSquared;
+        uniform mediump vec3 uAmbientLight;
+        uniform mediump int uLightCount;
 
         void main(void) {
             vec3 normal = normalize(vNormal);
-            vec3 surfaceToLight = normalize(vSurfaceToLight);
-            float light = dot(normal, surfaceToLight);
-            float distanceSquared = vSurfaceToLight.x * vSurfaceToLight.x + vSurfaceToLight.y * vSurfaceToLight.y + vSurfaceToLight.z * vSurfaceToLight.z;
-            float distanceMult = max(uMinDistanceMultiplier, (uMaxDistanceSquared - distanceSquared) / uMaxDistanceSquared);
-
+            vec3 totalLight = vec3(0.0, 0.0, 0.0);
+            if( uLightCount > 0 ) {
+                for( int i=0; i < `+ MAX_LIGHTS + `; i++ ) {
+                    if( i < uLightCount ) {
+                        vec3 surfaceToLight = vSurfaceToLights[i];
+                        vec3 normalizedSurfaceToLight = normalize(surfaceToLight);
+                        vec3 lightColor = uLightColors[i];
+                        float light = dot(normal, normalizedSurfaceToLight);
+                        float distanceSquared = surfaceToLight.x * surfaceToLight.x + surfaceToLight.y * surfaceToLight.y + surfaceToLight.z * surfaceToLight.z;
+                        float maxDistanceSquared = uLightMaxDistancesSquared[i];
+                        float distanceMult = max(0.0, (maxDistanceSquared-distanceSquared)/maxDistanceSquared);
+                        totalLight += (uAmbientLight + max(vec3(0.0, 0.0, 0.0), (lightColor - uAmbientLight) * light)) * distanceMult;
+                    }
+                }
+                totalLight = min(vec3(1.0, 1.0, 1.0), totalLight);
+            } else {
+                totalLight = uAmbientLight;
+            }
             gl_FragColor = texture2D(uSampler, vTextureCoord);
-            gl_FragColor.rgb *= (uAmbientLight + light * (1.0 - uAmbientLight)) * distanceMult;
+            gl_FragColor.rgb *= totalLight;
         }
     `;
 
@@ -55,23 +72,26 @@ let shapeRenderVertexShaderScript = `
         uniform mat4 uWorld;
         uniform mat4 uWorldViewProjection;
         uniform mat4 uWorldInverseTranspose;
-        uniform vec3 uLightPosition;
+        uniform vec3 uLightPositions[`+ MAX_LIGHTS +`];
+        uniform mediump int uLightCount;
 
         varying highp vec2 vTextureCoord;
         varying mediump vec3 vNormal;
-        varying mediump vec3 vSurfaceToLight;
+        varying mediump vec3 vSurfaceToLights[`+ MAX_LIGHTS +`];
 
         void main(void) {
             gl_Position = uWorldViewProjection * vec4(aVertexPosition, 1.0);
             vTextureCoord = aTextureCoord;
             vNormal = mat3(uWorldInverseTranspose) * aVertexNormal;
-
-            vec3 surfaceWorldPosition = (uWorld * vec4(aVertexPosition, 1)).xyz;
-            vSurfaceToLight = uLightPosition - surfaceWorldPosition;
+            for( int i=0; i < `+ MAX_LIGHTS + `; i++ ) {
+                if( i < uLightCount ) {
+                    vec3 lightPosition = uLightPositions[i];
+                    vec3 surfaceWorldPosition = (uWorld * vec4(aVertexPosition, 1)).xyz;
+                    vSurfaceToLights[i] = lightPosition - surfaceWorldPosition;
+                }
+            }
         }
     `;
-//let shapeRenderFragmentShaderScript = 'varying highp vec2 d;uniform sampler2D e;void main(){gl_FragColor=texture2D(e,d);}';
-//let shapeRenderVertexShaderScript = 'attribute vec3 a;attribute vec2 b;uniform mat4 c;varying highp vec2 d;void main(){gl_Position=c*vec4(a,1),d=b;}';
 
 function shapeRenderInit(
     gl: WebGLRenderingContext,
@@ -84,11 +104,13 @@ function shapeRenderInit(
     let uWorld = gl.getUniformLocation(program, "uWorld");
     let uWorldInverseTranspose = gl.getUniformLocation(program, "uWorldInverseTranspose");
     let uWorldViewProjection = gl.getUniformLocation(program, "uWorldViewProjection");
-    let uLightPosition = gl.getUniformLocation(program, "uLightPosition");
+    let uLightPositions = gl.getUniformLocation(program, "uLightPositions");
+    let uLightMaxDistancesSquared = gl.getUniformLocation(program, "uLightMaxDistancesSquared");
+    let uLightColors = gl.getUniformLocation(program, "uLightColors");
+    let uMinDistanceMult = gl.getUniformLocation(program, "uMinDistanceMultiplier");
+    let uLightCount = gl.getUniformLocation(program, "uLightCount");
     let uSampler = gl.getUniformLocation(program, "uSampler");
     let uAmbientLight = gl.getUniformLocation(program, "uAmbientLight");
-    let uMaxDistanceSquared = gl.getUniformLocation(program, "uMaxDistanceSquared");
-    let uMinDistanceMult = gl.getUniformLocation(program, "uMinDistanceMultiplier");
 
     let aVertexPosition = gl.getAttribLocation(program, "aVertexPosition");
     let aVertexNormal = gl.getAttribLocation(program, "aVertexNormal");
@@ -120,10 +142,11 @@ function shapeRenderInit(
         uWorld: uWorld,
         uWorldInverseTranspose: uWorldInverseTranspose,
         uWorldViewProjection: uWorldViewProjection,
-        uLightPosition: uLightPosition,
+        uLightPositions: uLightPositions,
+        uLightMaxDistancesSquared: uLightMaxDistancesSquared,
+        uLightColors: uLightColors,
+        uLightCount: uLightCount,
         uAmbientLight: uAmbientLight,
-        uMaxDistanceSquared: uMaxDistanceSquared,
-        uMinDistanceMult: uMinDistanceMult,
         aTextureCoord: aTextureCoord,
         uSampler: uSampler,
         textureCoordinatesBuffer: textureCoordinatesBuffer
@@ -172,12 +195,29 @@ function shapeRenderFactory(
                 let projectionTransform = matrixMultiply4(scope.projection, transform);
                 let transformInverseTranspose = matrixTranspose4(matrixInvert4(transform));
 
-                gl.uniformMatrix4fv(params.uWorld, false, transform);
+                let lightColors = [];
+                let lightPositions = [];
+                let lightMaxDistancesSquared = [];
+                for (let pointLight of scope.pointLights) {
+                    arrayPushAll(lightPositions, pointLight.position);
+                    arrayPushAll(lightColors, pointLight.color);
+                    arrayPush(lightMaxDistancesSquared, pointLight.rangeSquared);
+                }
+                if (!scope.pointLightCount) {
+                    lightColors = [0, 0, 0];
+                    lightPositions = [0, 0, 0];
+                    lightMaxDistancesSquared = [0];
+                }
+
+                gl.uniform3fv(params.uAmbientLight, scope.ambientLight);
+                gl.uniform3fv(params.uLightPositions, lightPositions);
+                gl.uniform3fv(params.uLightColors, lightColors);
+                gl.uniform1fv(params.uLightMaxDistancesSquared, lightMaxDistancesSquared);
+                gl.uniform1i(params.uLightCount, scope.pointLightCount);
+
                 gl.uniformMatrix4fv(params.uWorldViewProjection, false, projectionTransform);
                 gl.uniformMatrix4fv(params.uWorldInverseTranspose, false, transformInverseTranspose);
-                gl.uniform1f(params.uAmbientLight, scope.ambientLight);
-                gl.uniform1f(params.uMinDistanceMult, scope.minDistanceMult);
-                gl.uniform1f(params.uMaxDistanceSquared, scope.maxDistanceSquared);
+                gl.uniformMatrix4fv(params.uWorld, false, transform);
 
                 // texture
                 gl.activeTexture(gl.TEXTURE0);

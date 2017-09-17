@@ -1,9 +1,13 @@
 interface RenderScope {
-    lightLocations: number[],
-    lightCount: number,
+    ambientLight: Vector3,
+    pointLights: PointLight[],
+    pointLightCount: number,
     projection: Matrix4,
-    ambientLight: number,
-    maxDistanceSquared: number,
-    minDistanceMult: number,
     usePickTextures?: boolean
+}
+
+interface PointLight {
+    color: Vector3,
+    position: Vector3,
+    rangeSquared: number
 }
